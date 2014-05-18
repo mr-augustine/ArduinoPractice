@@ -58,8 +58,8 @@ void setup() {
   // temporarily disable interrupts before configuring the registers
   noInterrupts();
   
-  // 0 - Clear the PORTD register in case there's any data in there
-  //     and configure the steering and gasbrake pins as output pins
+  // 0 - Disable pull-up resistors on input pins, drive the steering and
+  //     gasbrake pins to low; set steering and gasbrake pins as output pins
   PORTD = 0;
   DDRD = 0b00001100;
   
