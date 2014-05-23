@@ -2,7 +2,7 @@
 filename: rd_pingsensor_demo.ino
 author:   Augustine (github: mr-augustine)
           http://pushbuttonrobotics.weebly.com/
-date:     21 May 2014
+date:     23 May 2014
 
 The rd_pingsensor_demo sketch is a basic demonstration of ping sensor control
 using timers and interrupts. The ping sensor readings are shown via three LEDs
@@ -49,43 +49,41 @@ ISR(TIMER0_COMPA_vect) {
 }
 
 ISR(PCINT2_vect) {                                         // PING ECHO RECEIVED
+  // for the start of the echo pulse (from LOW to HI)
   if (PIND & FLEFT_PING_PIN) {
-    PORTB |= FARFIELD_LED_PIN;
+    //PORTB |= FARFIELD_LED_PIN;
     if (ping_sent == 0) {
       //PORTB |= FARFIELD_LED_PIN;
       ping_sent = 1;
       ping_start_ticks = TCNT1;
     }
   }
-    else if (PIND & ~FLEFT_PING_PIN) {
+  // for the end of the echo pulse (from HI to LOW)
+  else if (PIND & ~FLEFT_PING_PIN) {
+    //PORTB &= ~FARFIELD_LED_PIN;
+    ping_end_ticks = TCNT1;
+    ping_duration_us = (ping_end_ticks - ping_start_ticks) << 2;
+    
+    if (ping_duration_us < 6243) {
+      PORTB |= DNGRCLOSE_LED_PIN;
+      PORTB &= ~NEARFIELD_LED_PIN;
       PORTB &= ~FARFIELD_LED_PIN;
-      //if (PIND & FLEFT_PING_PIN) {
-        ping_end_ticks = TCNT1;
-        ping_duration_us = (ping_end_ticks - ping_start_ticks) << 2;
-        //ping_duration_us = (TCNT1 - ping_start_ticks) << 2;
-      //}
-      
-      if (ping_duration_us < 800) {
-      //if (ping_duration_us < 6243) {
-        PORTB |= DNGRCLOSE_LED_PIN;
-        PORTB &= ~NEARFIELD_LED_PIN;
-        PORTB &= ~FARFIELD_LED_PIN;
-      }
-      else if (ping_duration_us > 12373) {
-        PORTB |= FARFIELD_LED_PIN;
-        PORTB &= ~DNGRCLOSE_LED_PIN;
-        PORTB &= ~NEARFIELD_LED_PIN;
-      }
-      else if (ping_duration_us > 6243 && ping_duration_us < 12373) {
-        PORTB |= NEARFIELD_LED_PIN;
-        PORTB &= ~DNGRCLOSE_LED_PIN;
-        PORTB &= ~FARFIELD_LED_PIN;
-      }
-      // all LEDs turned off as default
-      else {
-        PORTB &= ~DNGRCLOSE_LED_PIN & ~NEARFIELD_LED_PIN & ~FARFIELD_LED_PIN;
-      }
     }
+    else if (ping_duration_us > 12373) {
+      PORTB |= FARFIELD_LED_PIN;
+      PORTB &= ~DNGRCLOSE_LED_PIN;
+      PORTB &= ~NEARFIELD_LED_PIN;
+    }
+    else if (ping_duration_us > 6243 && ping_duration_us < 12373) {
+      PORTB |= NEARFIELD_LED_PIN;
+      PORTB &= ~DNGRCLOSE_LED_PIN;
+      PORTB &= ~FARFIELD_LED_PIN;
+    }
+    // all LEDs turned off as default
+    else {
+      PORTB &= ~DNGRCLOSE_LED_PIN & ~NEARFIELD_LED_PIN & ~FARFIELD_LED_PIN;
+    }
+  }
   //}
 }
 
@@ -145,7 +143,6 @@ void setup() {
 }
 
 void loop() {
-  //PORTB |= FARFIELD_LED_PIN;
   TCNT1 = 0;            // reset timer/counter 1 for each loop iteration
   TCNT0 = 0;            // reset timer/counter 0 for the ping trigger
   
@@ -160,25 +157,9 @@ void loop() {
   PIND |= FLEFT_PING_PIN;     // toggle from LOW to HI
 
 
-  //PIND &= ~FLEFT_PING_PIN;     // set the pin LOW
-  //PIND |= FLEFT_PING_PIN;      // set the pin HI
-  //PIND |= FLEFT_PING_PIN     // set the pin HI again
-  //PIND &= ~FLEFT_PING_PIN;     // set the pin LOW
-
-  
-  // verify that this ping trigger occurs within 2 to 5 microseconds
-  
-  //DDRD &= ~FLEFT_PING_PIN;    // set ping pins as input pins
-  //PCMSK2 |= ~FLEFT_PING_PIN;  // disable interrupts on pin D4
-  //PCICR |= ~PING_PCICR_GROUP  // disable interrupts for the ping pin group
-  
   loop_counter += 1;
   timer1_overflow = 0;
 
-  ////////////////////////////////////////////////////////////////////////////
-  // Reset Ping to ouput mode
-  //DDRD |= FLEFT_PING_PIN;    // set ping pins as output pins
-  //PCICR |= PING_PCICR_GROUP  // enable interrupts for the ping pin group
 
   while (1) {
     if (timer1_overflow) {
