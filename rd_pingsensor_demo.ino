@@ -18,11 +18,14 @@ volatile uint16_t ping_status;
 ////////////////////////////////////////////////////////////////////////////////
 // Defines
 #define LOOP_PERIOD 6250
+#define LOOP_FREQUENCY_HZ                  40.0
+
 #define PING_PCICR_GROUP (1 << 2)      // PCICR bit 2
-#define FLEFT_PING_PIN   (1 << 4)      // PortD register, bit 4 => Digital Pin 4
 #define DNGRCLOSE_LED_PIN (1 << 0)
 #define NEARFIELD_LED_PIN (1 << 1)
 #define FARFIELD_LED_PIN  (1 << 2)
+
+#define FLEFT_PING_PIN   (1 << 4)      // PortD register, bit 4 => Digital Pin 4
 //#define FCENTER_PING_PIN (1 << 5)      // PortD register, bit 5 => Digital Pin 5
 //#define FRIGHT_PING_PIN  (1 << 6)      // PortD register, bit 6 => Digital Pin 6
 
@@ -45,11 +48,11 @@ ISR(TIMER0_COMPA_vect) {
   PIND |= FLEFT_PING_PIN;     // end the ping sensor trigger pulse
   DDRD &= ~FLEFT_PING_PIN;    // set ping pins as input pins
   PCMSK2 |= FLEFT_PING_PIN;   // enable interrupts on ping pin to get echo
-  PCICR |= (1 << 2);          // enable interrupts on ping pin group
+  PCICR |= PING_PCICR_GROUP;  // enable interrupts on ping pin group
 }
 
 ISR(PCINT2_vect) {                                         // PING ECHO RECEIVED
-  // for the start of the echo pulse (from LOW to HI)
+  // capture the start of the echo pulse (from LOW to HI)
   if (PIND & FLEFT_PING_PIN) {
     //PORTB |= FARFIELD_LED_PIN;
     if (ping_sent == 0) {
@@ -58,23 +61,35 @@ ISR(PCINT2_vect) {                                         // PING ECHO RECEIVED
       ping_start_ticks = TCNT1;
     }
   }
-  // for the end of the echo pulse (from HI to LOW)
+  // capture the end of the echo pulse (from HI to LOW)
   else if (PIND & ~FLEFT_PING_PIN) {
     //PORTB &= ~FARFIELD_LED_PIN;
+    
     ping_end_ticks = TCNT1;
     ping_duration_us = (ping_end_ticks - ping_start_ticks) << 2;
     
-    if (ping_duration_us < 6243) {
+    ////////////////////////////////////////////////////////////////////////////
+    // Ping Regions
+    // turn on the LED that corresponds with the ping echo duration
+    // DANGER-CLOSE >> NEAR-FIELD >> FAR-FIELD
+    
+    // danger-close ping region
+    if (ping_duration_us <= LIMIT_DNGRCLOSE) {
       PORTB |= DNGRCLOSE_LED_PIN;
       PORTB &= ~NEARFIELD_LED_PIN;
       PORTB &= ~FARFIELD_LED_PIN;
     }
-    else if (ping_duration_us > 12373) {
+    
+    // far-field ping region
+    else if (ping_duration_us >= LIMIT_FARFIELD) {
       PORTB |= FARFIELD_LED_PIN;
       PORTB &= ~DNGRCLOSE_LED_PIN;
       PORTB &= ~NEARFIELD_LED_PIN;
     }
-    else if (ping_duration_us > 6243 && ping_duration_us < 12373) {
+    
+    // near-field ping region
+    else if (ping_duration_us > LIMIT_DNGRCLOSE && 
+                ping_duration_us < LIMIT_FARFIELD) {
       PORTB |= NEARFIELD_LED_PIN;
       PORTB &= ~DNGRCLOSE_LED_PIN;
       PORTB &= ~FARFIELD_LED_PIN;
@@ -84,7 +99,6 @@ ISR(PCINT2_vect) {                                         // PING ECHO RECEIVED
       PORTB &= ~DNGRCLOSE_LED_PIN & ~NEARFIELD_LED_PIN & ~FARFIELD_LED_PIN;
     }
   }
-  //}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -96,11 +110,9 @@ void setup() {
 
   ////////////////////////////////////////////////////////////////////////////
   // Configure Ping Sensors
-  PORTD = 0;            // disable pull-up resistors;
-  //DDRD = 0b01110000;    // set ping pins as output pins
-  DDRD = 0;
-  PCICR = 0;            // disable interrupts on the ping pin group
-  //PCICR = 0b00000100;   // enable pin change interrupts for the pin group
+  PORTD = 0;                  // disable pull-up resistors;
+  DDRD = 0;                   // set pins as input pins
+  PCICR = 0;                  // disable interrupts on the ping pin group
   PCMSK2 &= ~FLEFT_PING_PIN;  // disable interrupts on pin D4
 
   ////////////////////////////////////////////////////////////////////////////
