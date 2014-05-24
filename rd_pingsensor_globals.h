@@ -1,8 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Defines
-#define LOOP_FREQUENCY_HZ                  40.0
+
+// For the sake of this demo...
+// The ping sensor's viewable range is broken up into three distinct regions
+// (i.e., danger-close, near-field, and far-field). The danger-close region
+// defines the space in front of the sensor that is closest. The far-field
+// defines the space in front of the sensor that is farthest; up to the max
+// detection range. The near-field region is defined as the space between the 
+// danger-close and far-field regions. The limit values for these regions are
+// defined by the echo return duration in microseconds. For the Parralax Ping)))
+// sensor, echo return durations are between 115 and 18500 microseconds long.
+
+#define LIMIT_DNGRCLOSE                    6243
+#define LIMIT_FARFIELD                     12373
 
 // ping_status bit-field definitions
+// three front-facing sensors, one rear-facing sensor
 #define PSTATUS_FLEFT_PING_VALID           (1L << 0)
 #define PSTATUS_FCENTER_PING_VALID         (1L << 1)
 #define PSTATUS_FRIGHT_PING_VALID          (1L << 2)
