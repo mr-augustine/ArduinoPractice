@@ -15,7 +15,7 @@ volatile uint8_t timer1_overflow = 0;
 ////////////////////////////////////////////////////////////////////////////////
 // Defines
 #define LOOP_PERIOD 6250
-#define START_BUTTON_PIN (1 << 2)      // PortC register, bit 2 => Analog Pin 2
+#define BUMP_SWITCH_PIN (1 << 2)      // PortC register, bit 2 => Analog Pin 2
 #define STEERING_PORT PORTD
 #define GASBRAKE_PORT PORTD
 #define STEERING_PIN (1 << 2)          // PortD register, bit 2 => Digital Pin 2
@@ -46,8 +46,8 @@ ISR(TIMER1_COMPB_vect) {
   GASBRAKE_PORT &= ~GASBRAKE_PIN;
 }
 
-ISR(PCINT1_vect) {                                              // START BUTTON
-  if (PINC & START_BUTTON_PIN) {
+ISR(PCINT1_vect) {                                               // BUMP SWITCH
+  if (PINC & BUMP_SWITCH_PIN) {
     // writing a 1 to this bit will toggle the output for the pin.
     // see section 14.2.2 in the Atmel datasheet (Toggling the Pin)
     PINB |= (1 << 1);
@@ -80,12 +80,12 @@ void setup() {
                         // temporarily disabled (OCIE1B, OCIE1A, TOIE1)
                         
   ////////////////////////////////////////////////////////////////////////////
-  // Configure Start Button 
-  // configure the pushbutton pin as an input pin (Analog Pin 2, PCINT10).
+  // Configure Bump Switch
+  // configure the bump switch pin as an input pin (Analog Pin 2, PCINT10).
   DDRC = 0;
-  // turn on the pull-up resistor for the pushbutton pin
+  // turn on the pull-up resistor for the bump switch pin
   // PC0,PC1,PC3..PC5 -> input, not used
-  // PC2 (A2) -> input, pushbutton
+  // PC2 (A2) -> input, bump switch
   PORTC = 0b0000100;
   // enable pin change interrupts for the group of pins that includes A2
   PCICR = 0b00000010; 
