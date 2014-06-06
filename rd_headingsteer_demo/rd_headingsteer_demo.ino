@@ -110,6 +110,7 @@ void loop() {
 
   update_compass();
   update_pushbutton();
+  update_heading_error();
   update_control_values();
   
   while (1) {
@@ -117,7 +118,7 @@ void loop() {
       return;
     }
     
-    if (TCNT1 > LOOP_PERIOD) {
+    if (TCNT1 > LOOP_PERIOD_TICKS) {
       return;
     }
   }
