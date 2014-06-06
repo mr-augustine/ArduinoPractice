@@ -5,7 +5,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global Constants
-#define LOOP_PERIOD                6250
+#define LOOP_PERIOD_TICKS          6250
 #define LOOP_FREQUENCY_HZ          40.0
 #define SPEED_CONTROLLER_DELAY     5.0    // to bypass throttle neutral protect
 #define STOP_VEHICLE_TIME          12.0   // hard time limit to cease mission
@@ -14,6 +14,9 @@
 
 #define STATUS_COMPASS_ERROR       (1L <<  3)
 #define STATUS_COMPASS_VALID       (1L << 13)
+
+#define PID_K_PROP                 9.0   // pwm (usec) per deg error
+#define PID_K_DIFF                 4.5  // pwm (usec) per (deg error per sec)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +33,7 @@ typedef struct {
   float    compass_deg;
   float    compass_rad;
   float    target_heading_deg;
+  float    heading_error_deg;     // offset from target heading {+/-}
   
   uint16_t steering_servo_us;
   uint16_t gasbrake_servo_us;
