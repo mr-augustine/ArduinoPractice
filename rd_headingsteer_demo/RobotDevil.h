@@ -9,4 +9,6 @@ void update_compass(void);
 
 void update_control_values(void);
 
+void update_heading_error(void);
+
 #endif
