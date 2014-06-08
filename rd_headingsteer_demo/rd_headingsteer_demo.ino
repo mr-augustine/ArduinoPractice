@@ -25,11 +25,11 @@ This code is based on the Rocksteady framework.
 
 volatile uint8_t timer1_overflow = 0;
 globals_t globals;
-
+uint16_t overflowedAt_ticks = 0;
 ////////////////////////////////////////////////////////////////////////////////
 // Constants
-
-
+#define LOOP_ACTIVE_PORT        PORTB
+#define LOOP_ACTIVE_PIN         (1 << 1)
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -47,6 +47,7 @@ ISR(TIMER1_OVF_vect) {                                       // TIMER1 OVERFLOW
 ISR(PCINT1_vect) {                                          // PUSHBUTTON PRESS
   if (PINC & BUTTON_PIN) {
     button_pressed += 1;
+    PINB |= BUTTON_LED;
   }
 }
 
@@ -55,8 +56,21 @@ ISR(PCINT1_vect) {                                          // PUSHBUTTON PRESS
 void setup() {
   noInterrupts();
   
+  // enable pin change interrupts for the group of pins that includes A2
+  PCICR = 0b00000010; 
+  // enable interrupts on pin A2 (PCINT10)
+  PCMSK1 |= (1 << 2);
+  
   ////////////////////////////////////////////////////////////////////////////
   // Configure PORTB:
+  // PB0 ( 8) -> output, pushbutton toggle LED
+  // PB1 ( 9) -> output, loop-active indicator
+  // PB2 (10) -> output, target heading selected LED
+  // PB3 (11) -> output, mission started LED
+  // PB4 (12) -> output, on-target LED
+  // PB5 (13) -> output, troubleshooting LED
+  DDRB = 0b00111111;    // set LED pins as output pins (Digital Pins 10-12)
+  PORTB = 0;            // disable pull-up resistors; using external resistors
   
   ////////////////////////////////////////////////////////////////////////////
   // Configure PORTC: [PushButton][Compass]
@@ -64,10 +78,12 @@ void setup() {
   // PC4 (A4) -> SDA, compass
   // PC5 (A5) -> SCL, compass
   DDRC = 0b00110000;    // configure the compass pins as output pins
-  PORTC = 0b0000100;    // enable pull-up resistor for pushbutton
+  PORTC = 0b00000100;    // enable pull-up resistor for pushbutton
 
   ////////////////////////////////////////////////////////////////////////////
   // Configure PORTD: [Steering][GasBrake]
+  // PD2 (2) -> output, steering
+  // PD3 (3) -> output, gasbrake
   PORTD = 0;            // disable pull-up resistors;
   DDRD = 0b00001100;    // set gasbrake and steering as output pins
   
@@ -90,6 +106,7 @@ void setup() {
 }
 
 void loop() {
+  LOOP_ACTIVE_PORT |= LOOP_ACTIVE_PIN;
   TCNT1 = 0; // reset timer/counter 1 for each loop iteration
   
   // start the PWM pulses for steering and gasbrake
@@ -105,6 +122,7 @@ void loop() {
   TIMSK1 = 0b00000111;
   
   globals.loop_counter += 1;
+  globals.status_bits = 0;
   timer1_overflow = 0;
   
 
@@ -112,7 +130,19 @@ void loop() {
   update_pushbutton();
   update_heading_error();
   update_control_values();
+
+
   
+  // take note if loops runs longer than desired loop period
+  if (TCNT1 > LOOP_PERIOD_TICKS) {
+    overflowedAt_ticks = TCNT1;
+    globals.status_bits |= STATUS_MAIN_LOOP_SLOW;
+    return;
+  }
+  
+  LOOP_ACTIVE_PORT &= ~LOOP_ACTIVE_PIN;
+  
+  // otherwise go idle until the loop period is complete
   while (1) {
     if (timer1_overflow) {
       return;

@@ -11,13 +11,20 @@
 #define STOP_VEHICLE_TIME          12.0   // hard time limit to cease mission
 #define DEG_TO_RAD                 0.0174532925199  // 180/pi; multiply degree
                                                     // value by this to get rad
-
+#define STATUS_TIMER1_OVERFLOW     (1L <<  0)
+#define STATUS_MAIN_LOOP_SLOW      (1L <<  1)
 #define STATUS_COMPASS_ERROR       (1L <<  3)
 #define STATUS_COMPASS_VALID       (1L << 13)
 
-#define PID_K_PROP                 9.0   // pwm (usec) per deg error
-#define PID_K_DIFF                 4.5  // pwm (usec) per (deg error per sec)
+#define PID_K_PROP                 1.0   // pwm (usec) per deg error
+#define PID_K_DIFF                 0.2  // pwm (usec) per (deg error per sec)
 
+
+// respective LEDs turn ON when the heading was selected; when the mission
+// starts; and when the compass is pointing to the target heading (+/- 2 deg)
+#define HEADING_SELECTED_LED               (1 << 2)
+#define MISSION_STARTED_LED                (1 << 3)
+#define ON_TARGET_LED                      (1 << 4)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global Variables
@@ -41,7 +48,7 @@ typedef struct {
 } globals_t;
 
 extern globals_t globals;
-
+extern uint16_t overflowedAt_ticks;
 
 
 #endif
