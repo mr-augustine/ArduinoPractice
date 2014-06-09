@@ -16,6 +16,7 @@
 #define STATUS_COMPASS_ERROR       (1L <<  3)
 #define STATUS_COMPASS_VALID       (1L << 13)
 
+#define STEERING_GAIN              2.7777777777777  // 500 pwm_us / 180 degrees
 #define PID_K_PROP                 1.0   // pwm (usec) per deg error
 #define PID_K_DIFF                 0.2  // pwm (usec) per (deg error per sec)
 

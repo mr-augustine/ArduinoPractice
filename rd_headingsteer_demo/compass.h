@@ -10,7 +10,7 @@
 // Compass Constants
 #define COMPASS_ADDR                0x60
 #define COMPASS_READING_REG         2
-#define COMPASS_OFFSET_RAW          0       // if the compass is not oriented
+#define COMPASS_OFFSET_RAW          90      // if the compass is not oriented
                                             // north-up, use this to reorient
                                             // the readings
 

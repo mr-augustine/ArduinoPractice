@@ -14,11 +14,11 @@
 
 #define STEERING_NEUTRAL             1500
 #define GASBRAKE_NEUTRAL             1500
-#define STEERING_MIN                 1100       // steer full-right
-#define STEERING_MAX                 1900       // steer full-left
+#define STEERING_MIN                 1000       // steer full-right
+#define STEERING_MAX                 2000       // steer full-left
 #define GASBRAKE_MIN                 1100
 #define GASBRAKE_MAX                 1900
-#define GASBRAKE_CRUISE              1600
+#define GASBRAKE_CRUISE              1700
 
 ////////////////////////////////////////////////////////////////////////////////
 // Interrupt Service Routines
@@ -76,6 +76,11 @@ void update_control_values(void) {
     return;
   }
 
+  uint16_t steering = (uint16_t)(STEERING_NEUTRAL - globals.heading_error_deg * STEERING_GAIN);
+
+  /*--------------------------------------------------------------------------
+     THE FOLLOWING SECTION WAS COMMENTED OUT BY MR-AUGUSTINE ON 8 JUNE 2014.
+     REASON: TRYING OUT A SIMPLE STEERING GAIN ALGORITHM, INSTEAD OF PID CONTROL
   // if there was no overflow during the last loop period, then we can
   // assume that the two compass readings occured one loop period apart.
   // if there was a timer overflow, then we'll have to calculate a more accurate
@@ -116,6 +121,8 @@ void update_control_values(void) {
   else {
     steering += steering_k_diff;
   }
+    END COMMENT
+  -------------------------------------------------------------------------- */
   
   if (steering < STEERING_MIN) {
     //PORTB |= (1 << 5);
