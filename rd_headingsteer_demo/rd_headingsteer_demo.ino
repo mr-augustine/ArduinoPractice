@@ -6,8 +6,8 @@ date:     3 June 2014
 
 The rd_headingsteer_demo sketch demonstrates steering control towards a chosen
 heading. The target heading is set by first pointing the compass in the desired
-direction and then pressing a pushbutton. As the vehicle heading is changed,
-it's front wheels will steer towards the target heading.
+direction and then pressing a pushbutton. When the button is pressed a second
+time, the vehicle will steer itself towards the target heading.
 
 The CMPS10 compass is used in this demo. It is a tilt-compensated compass.
 The specs can be found here:

@@ -12,7 +12,7 @@
 #define STEERING_PIN                 (1 << 2)   // PD2 (2)
 #define GASBRAKE_PIN                 (1 << 3)   // PD3 (3)
 
-#define STEERING_NEUTRAL             1500
+#define STEERING_NEUTRAL             1550
 #define GASBRAKE_NEUTRAL             1500
 #define STEERING_MIN                 1000       // steer full-right
 #define STEERING_MAX                 2000       // steer full-left
@@ -34,12 +34,11 @@ ISR(TIMER1_COMPB_vect) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Mobility Variables
-float previous_hdgerror_deg = 0.0;
-float timeChange = 0.0;    // time between two successive compass readings
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Mobility Functions
 void update_heading_error(void) {
-  //globals.heading_error_deg = 0.0;
   float heading_delta = 0.0;
   
   if ((globals.status_bits & STATUS_COMPASS_VALID) == STATUS_COMPASS_VALID) {
@@ -52,7 +51,6 @@ void update_heading_error(void) {
       heading_delta += 360.0;
     }
     
-    previous_hdgerror_deg = globals.heading_error_deg;
     globals.heading_error_deg = heading_delta;
     // negative heading_error values indicate that you need to steer left to
     // move more directly towards the target, and vice versa
@@ -69,75 +67,30 @@ void update_control_values(void) {
     return;
   }
   
-  else if (globals.button_press_count >= 3) {//(seconds > STOP_VEHICLE_TIME) {
+  else if (seconds > STOP_VEHICLE_TIME) {
     globals.steering_servo_us = STEERING_NEUTRAL;
     globals.gasbrake_servo_us = GASBRAKE_NEUTRAL;
     
     return;
   }
 
+  // negative heading_error values indicate that we need to steer left (and
+  // vice versa). to steer more to the left we must increase the pwm signal
+  // value (and vice versa), which is why we subract the correction value from
+  // the neutral steering value.
   uint16_t steering = (uint16_t)(STEERING_NEUTRAL - globals.heading_error_deg * STEERING_GAIN);
 
-  /*--------------------------------------------------------------------------
-     THE FOLLOWING SECTION WAS COMMENTED OUT BY MR-AUGUSTINE ON 8 JUNE 2014.
-     REASON: TRYING OUT A SIMPLE STEERING GAIN ALGORITHM, INSTEAD OF PID CONTROL
-  // if there was no overflow during the last loop period, then we can
-  // assume that the two compass readings occured one loop period apart.
-  // if there was a timer overflow, then we'll have to calculate a more accurate
-  // time measurement (i.e., one loop period + overflow duration)
-  timeChange = 1 / LOOP_FREQUENCY_HZ;
-  if ((globals.status_bits & STATUS_TIMER1_OVERFLOW) == STATUS_TIMER1_OVERFLOW) {
-    timeChange += ((overflowedAt_ticks - LOOP_PERIOD_TICKS) /
-      (LOOP_FREQUENCY_HZ * LOOP_PERIOD_TICKS));
-  }
-  
-  // hdgerror_rate_dps is the heading error rate in degrees per second;
-  // i.e., the rate you are closing in or drifting away from the target heading.
-  // if the vehicle is closing in towards the target heading, this value will
-  // be positive.
-  float hdgerror_rate_dps = 
-      (previous_hdgerror_deg - globals.heading_error_deg) / timeChange;
-    
-  float steering_k_diff = PID_K_DIFF * hdgerror_rate_dps;  
-  float steering_k_prop = PID_K_PROP * globals.heading_error_deg;
-  
-  // the corrected steering control includes the proportional and differential
-  // components. the proportional component should always direct the vehicle
-  // toward the target heading, and the differential component should
-  // simultaneously direct the vehicle away from the target heading.
-  // here we subtract steering_k_prop because (1) negative heading_error values
-  // indicate we need to steer left (and vice versa); and (2) if we need to 
-  // steer more to the left we must increase the pwm signal value (and vice
-  // versa)
-  float steering = globals.steering_servo_us - steering_k_prop;
-  if (globals.heading_error_deg <= 0 ) {
-    // if the vehicle needs to turn left towards the target, add right-turn
-    // differential correction. remember: smaller PWM values steer right, and
-    // larger PWM values steer left.
-    steering -= steering_k_diff;
-  }
-  // otherwise, if the vehicle needs to turn right towards the target, add
-  // left-turn differential correction
-  else {
-    steering += steering_k_diff;
-  }
-    END COMMENT
-  -------------------------------------------------------------------------- */
-  
   if (steering < STEERING_MIN) {
-    //PORTB |= (1 << 5);
     steering = STEERING_MIN;
   }
   else if (steering > STEERING_MAX) {
     steering = STEERING_MAX;
-    //PORTB |= (1 << 5);
   }
-  //else { PORTB &= ~(1 << 5); }
   
   
   globals.steering_servo_us = (uint16_t) steering;
-  globals.gasbrake_servo_us = GASBRAKE_NEUTRAL;
-  //globals.gasbrake_servo_us = GASBRAKE_CRUISE;
+  //globals.gasbrake_servo_us = GASBRAKE_NEUTRAL;
+  globals.gasbrake_servo_us = GASBRAKE_CRUISE;
 
   return;
 }

@@ -8,7 +8,7 @@
 #define LOOP_PERIOD_TICKS          6250
 #define LOOP_FREQUENCY_HZ          40.0
 #define SPEED_CONTROLLER_DELAY     5.0    // to bypass throttle neutral protect
-#define STOP_VEHICLE_TIME          12.0   // hard time limit to cease mission
+#define STOP_VEHICLE_TIME          15.0   // hard time limit to cease mission
 #define DEG_TO_RAD                 0.0174532925199  // 180/pi; multiply degree
                                                     // value by this to get rad
 #define STATUS_TIMER1_OVERFLOW     (1L <<  0)
@@ -17,9 +17,6 @@
 #define STATUS_COMPASS_VALID       (1L << 13)
 
 #define STEERING_GAIN              2.7777777777777  // 500 pwm_us / 180 degrees
-#define PID_K_PROP                 1.0   // pwm (usec) per deg error
-#define PID_K_DIFF                 0.2  // pwm (usec) per (deg error per sec)
-
 
 // respective LEDs turn ON when the heading was selected; when the mission
 // starts; and when the compass is pointing to the target heading (+/- 2 deg)
@@ -49,7 +46,6 @@ typedef struct {
 } globals_t;
 
 extern globals_t globals;
-extern uint16_t overflowedAt_ticks;
 
 
 #endif
