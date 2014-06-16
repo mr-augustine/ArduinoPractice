@@ -128,7 +128,6 @@ void loop() {
   globals.status_bits = 0;
   timer1_overflow = 0;
   
-
   update_compass();
   update_pushbutton();
   update_heading_error();

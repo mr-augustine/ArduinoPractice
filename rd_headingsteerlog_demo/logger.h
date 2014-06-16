@@ -282,8 +282,8 @@ void init_logger(void)
   response = sd_command(CMD0, 0, 0x95);
   if (response == 0xFF)
     return;
-  else if (response != 0x01)
-    return;
+  else if (response != 0x01){    PORTB |= (1 << 0);
+    return;}
 
   response = sd_command(CMD8, 0x1AA, 0x87);
   if (response == 0xFF)

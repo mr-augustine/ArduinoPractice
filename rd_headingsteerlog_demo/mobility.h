@@ -67,7 +67,7 @@ void update_control_values(void) {
     return;
   }
   
-  else if (seconds > STOP_VEHICLE_TIME) {
+  else if (seconds > STOP_VEHICLE_TIME || globals.button_press_count >= 3) {
     globals.steering_servo_us = STEERING_NEUTRAL;
     globals.gasbrake_servo_us = GASBRAKE_NEUTRAL;
     
@@ -89,8 +89,8 @@ void update_control_values(void) {
   
   
   globals.steering_servo_us = (uint16_t) steering;
-  //globals.gasbrake_servo_us = GASBRAKE_NEUTRAL;
-  globals.gasbrake_servo_us = GASBRAKE_CRUISE;
+  globals.gasbrake_servo_us = GASBRAKE_NEUTRAL;
+  //globals.gasbrake_servo_us = GASBRAKE_CRUISE;
 
   return;
 }

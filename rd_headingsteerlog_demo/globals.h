@@ -28,8 +28,9 @@
 typedef struct {
   uint32_t start_bytes;
   
+  uint32_t loop_counter;  
   uint32_t status_bits;
-  uint32_t loop_counter;
+
   uint8_t  button_press_count;
   uint8_t  heading_set;
   uint8_t  mission_started;
