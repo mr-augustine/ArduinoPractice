@@ -12,6 +12,8 @@ BAUD  = 115200UL
 ## A directory for common include files and the simple USART library.
 ## If you move either the current folder or the Library folder, you'll 
 ##  need to change this path to match.
+## aug, 15 nov 15 Don't need to worry about the LIBDIR just yet;
+## blinkLED doesn't use anything from here
 LIBDIR = ../../AVR-Programming-Library
 
 ##########------------------------------------------------------##########

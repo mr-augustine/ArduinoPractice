@@ -1,4 +1,6 @@
                                                        /* Blinker Demo */
+     /* This source code is a modified version of the blinkLED program */
+                /* given in "Make: AVR Programming" by Elliot Williams */
 
 // ------- Preamble -------- //
 #include <avr/io.h>                        /* Defines pins, ports, etc */
@@ -8,6 +10,7 @@
 int main(void) {
 
   // -------- Inits --------- //
+  // We're using the onboard LED on the Arduino UNO
   DDRB |= 0b00100000;            /* Data Direction Register B:
                                    writing a one to the bit
                                    enables output. */
