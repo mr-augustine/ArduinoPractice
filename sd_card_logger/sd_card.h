@@ -1,0 +1,23 @@
+/*
+  Defines the macros, constants, and functions for the Secure Digital
+  High Capacity (SDHC) card.
+
+*/
+#include <avr/io.h>
+#include "pin_defines.h"
+
+#define CHIP_SELECT 	SPI_SS_PORT &= ~(1 << SPI_SS);
+#define CHIP_DESELECT	SPI_SS_PORT |= (1 << SPI_SS);
+
+////////////////////////////////////////////////////////////////////////////////
+// SD Card Commands
+// <pending>
+
+////////////////////////////////////////////////////////////////////////////////
+// Other Constants
+#define SD_CARD_BYTES_PER_BLOCK     512
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Functions
+// <pending>
