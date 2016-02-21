@@ -4,7 +4,7 @@
 #include "onboard_logger.h"
 
 uint16_t chunk_index;
-const void * data_ptr;
+const uint8_t * data_ptr;
 uint16_t data_size;
 uint16_t eeprom_capacity;
 uint16_t frame_index;
@@ -13,24 +13,26 @@ uint16_t num_frames;
 
 //uint8_t onboard_logger_enabled;
 static void advance_chunk_index();
+static void advance_frame_index();
 static uint8_t current_chunk_is_full();
 static uint16_t get_frame_start_address();
 static void reset_frame_index();
 static uint8_t set_capacity();
 static uint8_t set_chunk_index();
-static uint8_t set_data_ptr(const void * data_ptr);
+static uint8_t set_data_ptr(const void * data_pointer);
 static uint8_t set_num_chunks();
-static uint8_t set_num_frames(int frame_size);
-static void write_data(uint16_t dest_addr, uint16_t value_addr);
+static uint8_t set_num_frames(const int frame_size);
+static void write_data(const uint16_t dest_addr, const uint8_t * data);
 static void write_frame_prefix(uint16_t dest);
 static void write_frame_suffix(uint16_t dest);
 
-void init_onboard_logger(const void * data, int size) {
+// Initializes supporting variables given the specified data dimensions
+void init_onboard_logger(const void * data, int data_size) {
     onboard_logger_enabled = 0;
 
     if (set_capacity() &&
         set_num_chunks() &&
-        set_num_frames(size) &&
+        set_num_frames(data_size) &&
         set_data_ptr(data) &&
         set_chunk_index()) {
 
@@ -42,12 +44,15 @@ void init_onboard_logger(const void * data, int size) {
     return;
 }
 
+// Writes the next frame to the EEPROM
 void write_next_frame() {
+    // Don't write to the EEPROM if logging isn't enabled
     if (onboard_logger_enabled != 1) {
         return;
     }
 
     if (current_chunk_is_full() == 1) {
+        // TODO implement the chunk offload feature
         //mark_current_chunk_for_offloading();
 
         reset_frame_index();
@@ -61,12 +66,12 @@ void write_next_frame() {
     write_frame_prefix(frame_start_address);
 
     uint16_t data_start_address = frame_start_address + FRAME_PREFIX_SIZE;
-    write_data(data_start_address, (int)data_ptr);
+    write_data(data_start_address, data_ptr);
 
     uint16_t frame_suffix_address = data_start_address + data_size;
     write_frame_suffix(frame_suffix_address);
 
-    frame_index = frame_index + 1;
+    advance_frame_index();
 
     return;
 }
@@ -77,11 +82,18 @@ static void advance_chunk_index() {
     return;
 }
 
+static void advance_frame_index() {
+    frame_index = frame_index + 1;
+
+    return;
+}
+
 static uint8_t current_chunk_is_full() {
     return (uint8_t) (frame_index == num_frames);
     //return (uint8_t) ( ((frame_index + 1) % num_frames == 0) );
 }
 
+// Calculates the starting address for where the next frame should be written
 static uint16_t get_frame_start_address() {
     uint16_t chunk_address = (CHUNK_SIZE * chunk_index) % EEPROM_CAPACITY;
     uint16_t chunk_offset = (data_size * frame_index) % CHUNK_SIZE;
@@ -131,11 +143,11 @@ static uint8_t set_chunk_index() {
     return success;
 }
 
-static uint8_t set_data_ptr(const void * data_ptr) {
+static uint8_t set_data_ptr(const void * data_pointer) {
     uint8_t success = 0;
 
     if (data_ptr != NULL) {
-        data_ptr = data_ptr;
+        data_ptr = (uint8_t *) data_pointer;
 
         success = 1;
     }
@@ -170,26 +182,26 @@ static uint8_t set_num_frames(int frame_size) {
     return success;
 }
 
-static void write_data(uint16_t dest, uint16_t value_addr) {
+// Writes the data located at value_addr into the specified destination
+static void write_data(uint16_t dest, const uint8_t * data) {
     uint16_t byte_index;
-    unsigned char * destination = (unsigned char *) dest;
-    unsigned char * read_address = (unsigned char *) value_addr;
 
     for (byte_index = 0; byte_index < data_size; byte_index++) {
-        eeprom_write_byte(destination++, *read_address);
-        read_address = read_address + 1;
+        eeprom_write_byte( (uint8_t *) (dest + byte_index), 
+                           data[byte_index] );
     }
 
     return;
 }
 
+// Writes the frame prefix to the specified destination
 static void write_frame_prefix(uint16_t dest) {
     uint16_t byte_index;
-    unsigned char * destination = (unsigned char *) dest;
 
     for (byte_index = 0; byte_index < FRAME_PREFIX_SIZE; byte_index++) {
-        eeprom_write_byte(destination, (uint8_t)(FRAME_PREFIX >> byte_index));
-        destination = destination + 1;
+        // Write the frame prefix from MSByte to LSByte
+        eeprom_write_byte( (uint8_t *) (dest + byte_index), 
+            (uint8_t)(FRAME_PREFIX >> ((FRAME_PREFIX_SIZE - (byte_index + 1)) * 8)) );
     }
 
     return;
@@ -197,11 +209,11 @@ static void write_frame_prefix(uint16_t dest) {
 
 static void write_frame_suffix(uint16_t dest) {
     uint16_t byte_index;
-    unsigned char * destination = (unsigned char *) dest;
 
     for (byte_index = 0; byte_index < FRAME_SUFFIX_SIZE; byte_index++) {
-        eeprom_write_byte(destination, (uint8_t)(FRAME_SUFFIX >> byte_index));
-        destination = destination + 1;
+        // Write the frame suffix from MSByte to LSByte
+        eeprom_write_byte( (uint8_t *) (dest + byte_index), 
+            (uint8_t)(FRAME_SUFFIX >> ((FRAME_SUFFIX_SIZE - (byte_index + 1)) * 8)) );
     }
 
     return;
