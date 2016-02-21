@@ -13,9 +13,9 @@
 #define FRAME_SUFFIX_SIZE           4
 #define TOTAL_PREFIX_SUFFIX_SIZE    (FRAME_PREFIX_SIZE + FRAME_SUFFIX_SIZE)
 
-static uint8_t onboard_logger_enabled;
+uint8_t onboard_logger_enabled;
 
-void init_onboard_logger(const void * data, int data_size);
+void init_onboard_logger(const void * data, int size);
 void write_next_frame();
 //void write_next_frame(int frame_index);
 
