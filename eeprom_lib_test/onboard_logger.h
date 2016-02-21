@@ -15,7 +15,7 @@
 
 static uint8_t onboard_logger_enabled;
 
-void init_onboard_logger(const void * data, int size);
+void init_onboard_logger(const void * data, int data_size);
 void write_next_frame();
 //void write_next_frame(int frame_index);
 
