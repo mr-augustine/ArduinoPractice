@@ -22,16 +22,17 @@ int main(void) {
     DDRB |= 0b00100000;
 
     my_data_t mydata;
+    memset(&mydata, 0, sizeof(my_data_t));
 
     mydata.unsigned_long = 8675309;
     mydata.unsigned_short = 3560;
     mydata.unsigned_byte = 2;
     strcpy(mydata.sentence, "This is just a test. Nothing interesting to see here.\0");
-    mydata.float_value = -1.456;
-    mydata.double_value = -525.92367;
+    mydata.float_value = 500;
+    mydata.double_value = 500;
     mydata.signed_byte = -2;
     mydata.signed_short = -3560;
-    mydata.signed_long = -86753090;
+    mydata.signed_long = -8675309;
 
     init_onboard_logger(&mydata, sizeof(my_data_t));
     write_next_frame();
