@@ -35,7 +35,15 @@ int main(void) {
     mydata.signed_long = -8675309;
 
     init_onboard_logger(&mydata, sizeof(my_data_t));
-    write_next_frame();
+
+    // For a 114-byte frame and a 512-byte chunk we shoud have one full
+    // chunk (with padding) and an adjacent chunk with one frame in it
+    int write_index;
+    int num_iterations = 5;  
+
+    for (write_index = 0; write_index < num_iterations; write_index++) {
+        write_next_frame();
+    }
 
     // Turn on the LED if logging initialized successfully,
     // otherwise turn off the LED

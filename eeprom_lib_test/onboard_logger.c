@@ -3,24 +3,27 @@
 #include <stdlib.h>
 #include "onboard_logger.h"
 
-uint16_t chunk_index;
-const uint8_t * data_ptr;
-uint16_t frame_data_size;
-uint16_t eeprom_capacity;
-uint16_t frame_index;
-uint16_t num_chunks;
-uint16_t num_frames;
+static uint16_t chunk_index;
+static const uint8_t * data_ptr;
+static uint16_t frame_data_size;
+static uint16_t frame_size;
+static uint16_t eeprom_capacity;
+static uint16_t frame_index;
+static uint16_t num_chunks;
+static uint16_t num_frames;
 
 //uint8_t onboard_logger_enabled;
 static void advance_chunk_index();
 static void advance_frame_index();
 static uint8_t current_chunk_is_full();
 static uint16_t get_frame_start_address();
+static void pad_remaining_chunk_bytes();
 static void reset_frame_index();
 static uint8_t set_capacity();
 static uint8_t set_chunk_index();
 static uint8_t set_data_ptr(const void * data_pointer);
 static uint8_t set_frame_data_size(int data_size);
+static uint8_t set_frame_size();
 static uint8_t set_num_chunks();
 static uint8_t set_num_frames();
 static void write_data(const uint16_t dest_addr, const uint8_t * data);
@@ -34,6 +37,7 @@ void init_onboard_logger(const void * data, int data_size) {
     if (set_capacity() &&
         set_num_chunks() &&
         set_frame_data_size(data_size) &&
+        set_frame_size() &&
         set_num_frames() &&
         set_data_ptr(data) &&
         set_chunk_index()) {
@@ -54,8 +58,8 @@ void write_next_frame() {
     }
 
     if (current_chunk_is_full() == 1) {
-        // TODO implement the chunk padding feature
-        // pad_remaing_chunk_bytes();
+        pad_remaining_chunk_bytes();
+
         // TODO implement the chunk offload feature
         //mark_current_chunk_for_offloading();
 
@@ -94,13 +98,12 @@ static void advance_frame_index() {
 
 static uint8_t current_chunk_is_full() {
     return (uint8_t) (frame_index == num_frames);
-    //return (uint8_t) ( ((frame_index + 1) % num_frames == 0) );
 }
 
 // Calculates the starting address for where the next frame should be written
 static uint16_t get_frame_start_address() {
     uint16_t chunk_address = (CHUNK_SIZE * chunk_index) % EEPROM_CAPACITY;
-    uint16_t chunk_offset = (frame_data_size * frame_index) % CHUNK_SIZE;
+    uint16_t chunk_offset = (frame_size * frame_index) % CHUNK_SIZE;
     uint16_t start_address = chunk_address + chunk_offset;
 
     return start_address;
@@ -109,6 +112,21 @@ static uint16_t get_frame_start_address() {
 //static void mark_current_chunk_for_offloading() {
 //    return;
 //}
+
+// Fills the remainder of the chunk with padding bytes
+// Assumes that the chunk has its final whole frame written
+// to it.
+static void pad_remaining_chunk_bytes() {
+    uint16_t start_address = get_frame_start_address();
+    uint16_t num_pads = CHUNK_SIZE - (frame_size * frame_index); 
+    uint16_t pad_index; 
+
+    for (pad_index = 0; pad_index < num_pads; pad_index++) {
+        eeprom_write_byte((uint8_t *) (start_address + pad_index), PADDING_BYTE);        
+    }
+
+    return;
+}
 
 static void reset_frame_index() {
     frame_index = 0;
@@ -172,6 +190,19 @@ static uint8_t set_frame_data_size(int data_size) {
     return success;
 }
 
+static uint8_t set_frame_size() {
+    uint8_t success = 0;
+    frame_size = TOTAL_PREFIX_SUFFIX_SIZE;
+
+    if (frame_data_size > 0) {
+        frame_size = frame_size + frame_data_size;
+
+        success = 1;
+    }
+
+    return success;
+}
+
 // Calculates the whole number of chunks that can be written to
 static uint8_t set_num_chunks() {
     uint8_t success = 0;
@@ -187,12 +218,10 @@ static uint8_t set_num_chunks() {
 }
 
 static uint8_t set_num_frames() {
-    uint16_t frame_size = TOTAL_PREFIX_SUFFIX_SIZE;
     uint8_t success = 0;
     num_frames = 0; 
 
-    if (frame_data_size > 0) {
-        frame_size = frame_size + frame_data_size;
+    if (frame_size > 0) {
         num_frames = CHUNK_SIZE / frame_size;
 
         success = 1;
