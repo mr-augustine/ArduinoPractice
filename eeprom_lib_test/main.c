@@ -22,19 +22,28 @@ int main(void) {
     DDRB |= 0b00100000;
 
     my_data_t mydata;
+    memset(&mydata, 0, sizeof(my_data_t));
 
     mydata.unsigned_long = 8675309;
     mydata.unsigned_short = 3560;
     mydata.unsigned_byte = 2;
     strcpy(mydata.sentence, "This is just a test. Nothing interesting to see here.\0");
-    mydata.float_value = -1.456;
-    mydata.double_value = -525.92367;
+    mydata.float_value = 500;
+    mydata.double_value = 500;
     mydata.signed_byte = -2;
     mydata.signed_short = -3560;
-    mydata.signed_long = -86753090;
+    mydata.signed_long = -8675309;
 
     init_onboard_logger(&mydata, sizeof(my_data_t));
-    write_next_frame();
+
+    // For a 114-byte frame and a 512-byte chunk we shoud have one full
+    // chunk (with padding) and an adjacent chunk with one frame in it
+    int write_index;
+    int num_iterations = 5;  
+
+    for (write_index = 0; write_index < num_iterations; write_index++) {
+        write_next_frame();
+    }
 
     // Turn on the LED if logging initialized successfully,
     // otherwise turn off the LED

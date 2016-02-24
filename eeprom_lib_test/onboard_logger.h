@@ -12,6 +12,7 @@
 #define FRAME_SUFFIX                0xCAFEBABE
 #define FRAME_SUFFIX_SIZE           4
 #define TOTAL_PREFIX_SUFFIX_SIZE    (FRAME_PREFIX_SIZE + FRAME_SUFFIX_SIZE)
+#define PADDING_BYTE                0xAA
 
 uint8_t onboard_logger_enabled;
 
