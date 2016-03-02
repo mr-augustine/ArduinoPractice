@@ -9,11 +9,16 @@
 #define UCSZ00 1
 #define UDRE0 5
 
+// RBIT == Register Bit
+// Shortcut for grabbing a bit from a register
+#define RBIT(REGISTER, BIT) (REGISTER & (1 << BIT))
+
 void init_usart(void);
 void usart_write(char * character);
 
 int main(void) {
-    char greeting[14] = "Hello, world!\0";
+    char greeting[15] = "Hello, world!\n\0";
+    char message[128];
 
     // Disable interrupts before configuring USART
     cli();
@@ -24,6 +29,12 @@ int main(void) {
     sei();
 
     usart_write(greeting);
+
+    snprintf(message, 128,
+        "PORTB: %02X %02X %02X %02X %02X %02X %02X %02X\n",
+        RBIT(PORTB, 7), RBIT(PORTB, 6), RBIT(PORTB, 5), RBIT(PORTB, 4),
+        RBIT(PORTB, 3), RBIT(PORTB, 2), RBIT(PORTB, 1), RBIT(PORTB, 0));
+    usart_write(message);
 
     return 0;
 }
@@ -61,3 +72,5 @@ void usart_write(char * character) {
 
     return;
 }
+
+
