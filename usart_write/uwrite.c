@@ -2,6 +2,8 @@
 #include <avr/io.h>
 #include <stdio.h>
 
+#include "uwrite.h"
+
 #define RCIE0   7
 #define RXEN0   4
 #define TXEN0   3
@@ -9,9 +11,10 @@
 #define UCSZ00  1
 #define UDRE0   5
 
-#define TX_REG_NOT_READY (!(UCSR0A & (1 << UDRE0)))
+#define TX_REG_NOT_READY() (!(UCSR0A & (1 << UDRE0)))
 
-static uint8_t initialized;
+static uint8_t uwrite_initialized;
+static char buffer[BUFF_SIZE];
 
 void UWRITE_init(void) {
     // Disable interrupts before configuring USART
@@ -38,53 +41,77 @@ void UWRITE_init(void) {
     // Re-enable interrupts after USART configuration is complete
     sei();
 
-    initialized = 1;
+    uwrite_initialized = 1;
 
     return;
 }
 
 // Prints a null-terminated character buffer to the USART port
 void UWRITE_print_buff(char * character) {
-    if (initialized) {
+    if (uwrite_initialized) {
+
         while (*character != 0) {
             // Wait until the transmit data register is ready
-            while TX_REG_NOT_READY {;}
+            while TX_REG_NOT_READY() {;}
 
             UDR0 = *character;
             character++;
         }
     }
 
-    return;
+    return; 
 }
 
-// Prints a byte to the USART port
+// Prints a byte to the USART port as a hex value
 void UWRITE_print_byte(void * a_byte) {
-    if (initialized) {
-        while TX_REG_NOT_READY {;}
+    if (uwrite_initialized) {
+        char * char_ptr = buffer;
 
-        UDR0 = *((uint8_t *)a_byte);
-    }
+        snprintf(buffer, BUFF_SIZE, "0x%02X\r\n", *((char *) a_byte));
+        
+        while (*char_ptr != 0) {
+            while TX_REG_NOT_READY() {;}
 
-    return;
-}
-
-// Prints a short to the USART port
-void UWRITE_print_short(void * a_short) {
-    if (initialized) {
-        void * short_ptr = a_short;
-        int i;
-
-        // TODO add the option to print byte values as Hex, Bin, or Dec
-        for (i = 0; i < 2; i++) {
-            UWRITE_print_byte(short_ptr);
-            short_ptr = short_ptr + 1;
+            UDR0 = *char_ptr;
+            char_ptr++;
         }
     }
 
     return;
 }
 
-/*void UWRITE_print_long(void * a_long) {
+// Prints a short to the USART port as a hex value
+void UWRITE_print_short(void * a_short) {
+    if (uwrite_initialized) {
+        char * char_ptr = buffer;
+
+        snprintf(buffer, BUFF_SIZE, "0x%02X\r\n", *((uint16_t *) a_short));
+
+        while (*char_ptr != 0) {
+            while TX_REG_NOT_READY() {;}
+
+            UDR0 = *char_ptr;
+            char_ptr++;
+        }
+    }
+
     return;
-}*/
+}
+
+// Prints a long to the USART port as a hex value
+void UWRITE_print_long(void * a_long) {
+    if (uwrite_initialized) {
+        char * char_ptr = buffer;
+
+        snprintf(buffer, BUFF_SIZE, "0x%02lX\r\n", *((uint32_t *) a_long));
+
+        while (*char_ptr != 0) {
+            while TX_REG_NOT_READY() {;}
+
+            UDR0 = *char_ptr;
+            char_ptr++;
+        }
+    }
+
+    return;
+}

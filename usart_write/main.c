@@ -6,13 +6,18 @@ int main(void) {
 
     char message[10];
 
-    snprintf(message, 10, "Hello!\n");
+    // We need the carriage return when we use the `screen` command to display 
+    // the output on the console.
+    snprintf(message, 10, "Hello!\r\n");
     UWRITE_print_buff(message);
 
     UWRITE_print_byte("3");
 
-    int a_number = 20;
+    int a_number = 65535;
     UWRITE_print_short(&a_number);
+
+    long a_long_number = 525600;
+    UWRITE_print_long(&a_long_number);
 
     return 0;
 }
