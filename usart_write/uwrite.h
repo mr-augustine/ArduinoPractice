@@ -1,7 +1,7 @@
 #ifndef _UWRITE_H_
 #define _UWRITE_H_
 
-#define BUFF_SIZE 256
+#define BUFF_SIZE 128 
 
 void UWRITE_init(void);
 void UWRITE_print_buff(char * character);
