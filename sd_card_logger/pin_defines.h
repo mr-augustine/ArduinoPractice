@@ -32,7 +32,7 @@
 #define SPI_SCK_PORT    PORTB
 #define SPI_SCK_DDR     DDRB
 #define SPI_SCK_PIN     PINB
-#define SPI_SCK         PB13    /* Digital Pin 13 */
+#define SPI_SCK         PB5     /* Digital Pin 13 */
 
 
 #endif /* _PIN_DEFINES_H_ */

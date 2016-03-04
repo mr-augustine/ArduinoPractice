@@ -7,8 +7,8 @@
 #include <avr/io.h>
 #include "pin_defines.h"
 
-#define CHIP_SELECT 	SPI_CS_PORT &= ~(1 << SPI_CS)
-#define CHIP_DESELECT	SPI_CS_PORT |= (1 << SPI_CS)
+#define CHIP_SELECT 	(SPI_CS_PORT &= ~(1 << SPI_CS))
+#define CHIP_DESELECT	(SPI_CS_PORT |= (1 << SPI_CS))
 
 ////////////////////////////////////////////////////////////////////////////////
 // SD Card Commands and Responses
@@ -28,7 +28,7 @@
 
 #define SDCMD_APP_CMD             0x37 //CMD55; gets R1 response
 #define SDARG_APP_CMD             0x0
-#define SDSFX_APP_CMD             0x1 //CRC doesn't matter, just 0b1
+#define SDSFX_APP_CMD             0x0 //0x1 //CRC doesn't matter, just 0b1
 
 #define SDCMD_SD_SEND_OP_COND     0x29 //ACMD41; gets R1 response
 #define SDARG_SD_SEND_OP_COND     0x40000000
@@ -58,30 +58,39 @@
 #define JUNK_BYTE                 0xFF // used to force data to be exchanged
 #define SDCARD_POLL_LIMIT         0xFF // max number of times to poll
 #define SDCARD_MAX_RETRIES        0xFF // max retries for send op condition
+#define MS_BIT                    0x80
+#define LS_BIT                    0x01
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
 
-/* Configures the Arduino as the Master device with a clock rate of f_osc/128 */
-void init_spi(void);
+/* Configures the Arduino as the Master device with a clock rate of f_osc/8 */
+void SPI_init(void);
 
 /* Initializes the SD card to run in SPI mode. */
-void init_sd_card(void);
+void SDCARD_init(void);
 
 /* Sends the specified byte on the SPI output.
    Assumes that the target device was already selected.
    Returns the byte received in exchange.
 */
+//TODO: Make this a static function
 uint8_t SPI_exchange_byte(uint8_t byte);
 
 /* Sends the specified command to the SD card */
+//TODO: Make this a static function
 void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix);
 
 /* Polls the SD card for a response.
    Returns the response on success; an ERROR_BYTE on failure.
 */
+//TODO: Make this a static function
 uint8_t SDCARD_get_response(void);
 
+/* Reads the SD card's capacity. */
+//TODO: Make this a static function
+uint8_t SDCARD_read_card_size(void); 
+
 /* Writes a byte to the SD card at the specified address */
-void SDCARD_write_byte(uint32_t address, uint8_t byte);
+//void SDCARD_write_byte(uint32_t address, uint8_t byte);
 
