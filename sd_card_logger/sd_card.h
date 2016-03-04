@@ -7,8 +7,8 @@
 #include <avr/io.h>
 #include "pin_defines.h"
 
-#define CHIP_SELECT 	SPI_CS_PORT &= ~(1 << SPI_CS)
-#define CHIP_DESELECT	SPI_CS_PORT |= (1 << SPI_CS)
+#define CHIP_SELECT 	(SPI_CS_PORT &= ~(1 << SPI_CS))
+#define CHIP_DESELECT	(SPI_CS_PORT |= (1 << SPI_CS))
 
 ////////////////////////////////////////////////////////////////////////////////
 // SD Card Commands and Responses
@@ -28,7 +28,7 @@
 
 #define SDCMD_APP_CMD             0x37 //CMD55; gets R1 response
 #define SDARG_APP_CMD             0x0
-#define SDSFX_APP_CMD             0x1 //CRC doesn't matter, just 0b1
+#define SDSFX_APP_CMD             0x0 //0x1 //CRC doesn't matter, just 0b1
 
 #define SDCMD_SD_SEND_OP_COND     0x29 //ACMD41; gets R1 response
 #define SDARG_SD_SEND_OP_COND     0x40000000
@@ -58,6 +58,8 @@
 #define JUNK_BYTE                 0xFF // used to force data to be exchanged
 #define SDCARD_POLL_LIMIT         0xFF // max number of times to poll
 #define SDCARD_MAX_RETRIES        0xFF // max retries for send op condition
+#define MS_BIT                    0x80
+#define LS_BIT                    0x01
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -83,5 +85,5 @@ void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix);
 uint8_t SDCARD_get_response(void);
 
 /* Writes a byte to the SD card at the specified address */
-void SDCARD_write_byte(uint32_t address, uint8_t byte);
+//void SDCARD_write_byte(uint32_t address, uint8_t byte);
 
