@@ -5,7 +5,7 @@ int main(void) {
     UWRITE_init();
 
     UWRITE_print_buff("---Start---\r\n");
-    init_spi();
+    SPI_init();
 
     //uint8_t spi_register = SPCR;
     //UWRITE_print_byte(&spi_register);

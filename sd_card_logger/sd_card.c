@@ -1,7 +1,7 @@
 #include "sd_card.h"
 #include "uwrite.h"
 
-void init_spi(void) {
+void SPI_init(void) {
   SPI_CS_DDR |= (1 << SPI_CS); // set chip select pin as an output
   CHIP_DESELECT; // start the card as not being selected
 
@@ -21,7 +21,7 @@ void init_spi(void) {
   SPCR |= (1 << SPE);               // enable SPI operations
 }
 
-void init_sd_card(void) {
+void SDCARD_init(void) {
   CHIP_DESELECT;
 
   // Before sending any commands, make sure the SD card is ready by sending
@@ -125,9 +125,25 @@ void init_sd_card(void) {
                       SDARG_READ_OCR,
                       SDSFX_READ_OCR);
   uint8_t read_ocr_response = SDCARD_get_response();
+
+  //----- DEBUG
+  UWRITE_print_buff("READ_OCR response: ");
+  UWRITE_print_byte(&read_ocr_response);
+  //----- DEBUG
+
   if (read_ocr_response != SDRES_READ_OCR)
     return;
+
+  // Turn on DEBUG LED
+  PORTD |= (1 << 4);
+
+  // Increase SPI clock to 2 MHz
+  SPSR |= (1 << SPI2X);
+  SPCR &= ~(1 << SPR1);
+
   // TODO: Read the card size
+  SDCARD_read_card_size(); 
+
   // TODO: Find the next available block for writing
   // TODO: Set an external variable to indicate that the SD card is good to go
 }
@@ -179,6 +195,12 @@ uint8_t SDCARD_get_response(void) {
 
   return ERROR_BYTE;
 }
+
+uint8_t SDCARD_read_card_size(void) {
+
+  return 0;
+}
+
 /*
 void SDCARD_write_byte(uint32_t address, uint8_t byte) {
 
