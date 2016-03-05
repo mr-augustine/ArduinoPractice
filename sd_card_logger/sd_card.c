@@ -1,6 +1,11 @@
 #include "sd_card.h"
 #include "uwrite.h"
 
+static uint8_t SPI_exchange_byte(uint8_t byte);
+static uint8_t SDCARD_get_response(void);
+static uint8_t SDCARD_read_card_size(void);
+static void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix);
+
 void SPI_init(void) {
   SPI_CS_DDR |= (1 << SPI_CS); // set chip select pin as an output
   CHIP_DESELECT; // start the card as not being selected
@@ -148,7 +153,11 @@ void SDCARD_init(void) {
   // TODO: Set an external variable to indicate that the SD card is good to go
 }
 
-uint8_t SPI_exchange_byte(uint8_t byte) {
+/* Sends the specified byte on the SPI output.
+   Assumes that the target device was already selected.
+   Returns the byte received in exchange.
+*/
+static uint8_t SPI_exchange_byte(uint8_t byte) {
   SPDR = byte;
 
   // Wait until byte exchange is complete. This is indicated when the SPIF
@@ -158,7 +167,8 @@ uint8_t SPI_exchange_byte(uint8_t byte) {
   return SPDR;
 }
 
-void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix) {
+/* Sends the specified command to the SD card */
+static void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix) {
   // Send up to 8 high bytes until 0xFF is received
   int i;
   uint8_t response;
@@ -183,7 +193,10 @@ void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix) {
   SPI_exchange_byte(suffix);
 }
 
-uint8_t SDCARD_get_response(void) {
+/* Polls the SD card for a response.
+   Returns the response on success; an ERROR_BYTE on failure.
+*/
+static uint8_t SDCARD_get_response(void) {
   // Poll the card for a response no more than SDCARD_POLL_LIMIT times
   uint8_t poll_index;
   for (poll_index = 0; poll_index < SDCARD_POLL_LIMIT; poll_index++) {
@@ -196,12 +209,14 @@ uint8_t SDCARD_get_response(void) {
   return ERROR_BYTE;
 }
 
-uint8_t SDCARD_read_card_size(void) {
+/* Reads the SD card's capacity. */
+static uint8_t SDCARD_read_card_size(void) {
+  UWRITE_print_buff("Reading card size\r\n");
 
   return 0;
 }
 
-/*
-void SDCARD_write_byte(uint32_t address, uint8_t byte) {
+/* Writes a byte to the SD card at the specified address */
+/*void SDCARD_write_byte(uint32_t address, uint8_t byte) {
 
 }*/

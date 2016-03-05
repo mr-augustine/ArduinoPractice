@@ -10,7 +10,7 @@ int main(void) {
     //uint8_t spi_register = SPCR;
     //UWRITE_print_byte(&spi_register);
 
-    init_sd_card();
+    SDCARD_init();
     // Turn on the LED if logging initialized successfully,
     // otherwise turn off the LED
     /*if (SPCR == 0b01010011) {

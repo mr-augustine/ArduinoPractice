@@ -70,27 +70,3 @@ void SPI_init(void);
 /* Initializes the SD card to run in SPI mode. */
 void SDCARD_init(void);
 
-/* Sends the specified byte on the SPI output.
-   Assumes that the target device was already selected.
-   Returns the byte received in exchange.
-*/
-//TODO: Make this a static function
-uint8_t SPI_exchange_byte(uint8_t byte);
-
-/* Sends the specified command to the SD card */
-//TODO: Make this a static function
-void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix);
-
-/* Polls the SD card for a response.
-   Returns the response on success; an ERROR_BYTE on failure.
-*/
-//TODO: Make this a static function
-uint8_t SDCARD_get_response(void);
-
-/* Reads the SD card's capacity. */
-//TODO: Make this a static function
-uint8_t SDCARD_read_card_size(void); 
-
-/* Writes a byte to the SD card at the specified address */
-//void SDCARD_write_byte(uint32_t address, uint8_t byte);
-
