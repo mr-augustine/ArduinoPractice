@@ -45,6 +45,7 @@
 #define SDSFX_SEND_CSD            0x0
 
 #define SDCMD_READ_SINGLE_BLOCK   0x11 //CMD17; gets R1 response
+#define SDSFX_READ_SINGLE_BLOCK   0x0
 
 #define SDCMD_WRITE_BLOCK         0x18 //CMD24; gets R1 response
 

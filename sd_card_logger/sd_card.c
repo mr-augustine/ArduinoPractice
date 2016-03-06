@@ -3,9 +3,14 @@
 #include "uwrite.h"
 
 static uint8_t SPI_exchange_byte(uint8_t byte);
+static int8_t SDCARD_check_block(uint32_t block_address);
 static uint8_t SDCARD_get_response(void);
 static uint8_t SDCARD_read_card_size(void);
 static void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix);
+
+volatile uint8_t SDCARD_enabled;
+uint32_t SDCARD_next_block;
+uint32_t SDCARD_num_blocks;
 
 void SPI_init(void) {
   SPI_CS_DDR |= (1 << SPI_CS); // set chip select pin as an output
@@ -150,6 +155,7 @@ void SDCARD_init(void) {
   }
 
   // TODO: Find the next available block for writing
+  SDCARD_check_block(0);
   // TODO: Set an external variable to indicate that the SD card is good to go
 
   // Turn on DEBUG LED
@@ -170,6 +176,77 @@ static uint8_t SPI_exchange_byte(uint8_t byte) {
   return SPDR;
 }
 
+static int8_t SDCARD_check_block(uint32_t block_address) {
+  uint8_t response;
+  union {
+    uint8_t bytes[4];
+    uint32_t dword;
+  } block_data;
+
+  char msg[64];
+  snprintf(msg, 64, "Reading block %lu\r\n", block_address);
+  UWRITE_print_buff(msg);
+
+  //----- DEBUG
+  UWRITE_print_buff("Sending READ_SINGLE_BLOCK (CMD17) ... got ");
+  //----- DEBUG
+
+  SDCARD_send_command(SDCMD_READ_SINGLE_BLOCK,
+                      block_address,
+                      SDSFX_READ_SINGLE_BLOCK);
+  uint8_t read_block_response = SDCARD_get_response();
+
+  //----- DEBUG
+  UWRITE_print_byte(&read_block_response);
+  //----- DEBUG
+
+  uint8_t poll_index;
+  for (poll_index = 0; poll_index < 0xFF; poll_index++) {
+    response = SPI_exchange_byte(JUNK_BYTE); 
+
+    if (response == START_TOKEN) { 
+      UWRITE_print_buff("DATA START_TOKEN received\r\n");
+      break;
+    }
+  }
+  if (response != START_TOKEN) {
+    return -1;
+  }
+
+  // Read the first 32 bits of the block
+  block_data.bytes[0] = SPI_exchange_byte(JUNK_BYTE);
+  block_data.bytes[1] = SPI_exchange_byte(JUNK_BYTE); 
+  block_data.bytes[2] = SPI_exchange_byte(JUNK_BYTE);
+  block_data.bytes[3] = SPI_exchange_byte(JUNK_BYTE); 
+
+  //----- DEBUG
+  UWRITE_print_long(block_data.bytes);
+  //----- DEBUG
+
+  // Ignore the remainder of the block
+  // ignore_index should go up to (512 - 4) bytes = 508 bytes
+  uint16_t ignore_index;
+  for (ignore_index = 0; ignore_index < 508; ignore_index++) {
+    SPI_exchange_byte(JUNK_BYTE);
+  }
+
+  //----- DEBUG
+  UWRITE_print_buff("Final ignored byte: ");
+  UWRITE_print_byte(&ignore_byte);
+  //----- DEBUG
+
+  PORTD |= (1 << 4);
+  // Ignore the 16-bit CRC
+  SPI_exchange_byte(JUNK_BYTE);
+  SPI_exchange_byte(JUNK_BYTE);
+
+  if (block_data.dword == 0xDADAFEED) {
+    return 1;
+  }
+
+  return 0;
+}
+  
 /* Sends the specified command to the SD card */
 static void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix) {
   // Send up to 8 high bytes until 0xFF is received
@@ -265,12 +342,12 @@ static uint8_t SDCARD_read_card_size(void) {
   }
 
   // Expecting start token (0xFE) + 16 bytes of data + 16-bit CRC
-  uint16_t grab_index;
+  uint16_t poll_index;
   uint8_t response;
 
   // Send JUNK_BYTE until start token is received, then read the CSD register
   // See Section 7.2.6, Figure 7-3, and Section 7.3.3.2 in SD Card Specs
-  for (grab_index = 0; grab_index < 0xFF; grab_index++) {
+  for (poll_index = 0; poll_index < 0xFF; poll_index++) {
     response = SPI_exchange_byte(JUNK_BYTE); 
 
     if (response == START_TOKEN) { 
@@ -283,11 +360,12 @@ static uint8_t SDCARD_read_card_size(void) {
   }
 
   uint8_t csd_register[16];
+  uint8_t csd_byte_index;
 
   // Read the 16-byte CSD register
   UWRITE_print_buff("Reading CSD register...\r\n");
-  for (grab_index = 0; grab_index < 16; grab_index++) {
-    csd_register[grab_index] = SPI_exchange_byte(JUNK_BYTE);    
+  for (csd_byte_index = 0; csd_byte_index < 16; csd_byte_index++) {
+    csd_register[csd_byte_index] = SPI_exchange_byte(JUNK_BYTE);    
   }
 
   // Ignore 16-bit CRC
@@ -295,22 +373,21 @@ static uint8_t SDCARD_read_card_size(void) {
   //SPI_exchange_byte(JUNK_BYTE);
 
   // Print the CSD register data
-  char msg[100];
-  snprintf(msg, 100,
+  char msg[64];
+  snprintf(msg, 64,
     "%02X %02X %02X %02X %02X %02X %02X %02X ",
     csd_register[0], csd_register[1], csd_register[2], csd_register[3],
     csd_register[4], csd_register[5], csd_register[6], csd_register[7]);
   UWRITE_print_buff(msg);
 
-  snprintf(msg, 100,
+  snprintf(msg, 64,
     "%02X %02X %02X %02X %02X %02X %02X %02X\r\n",
     csd_register[8], csd_register[9], csd_register[10], csd_register[11],
     csd_register[12], csd_register[13], csd_register[14], csd_register[15]);
   UWRITE_print_buff(msg);
 
-  // Extract the C_SIZE value
+  // Extract the C_SIZE value and calculate the card's capacity
   uint32_t csd_c_size;
-  uint32_t num_blocks;
   uint32_t card_capacity;
 
   // The most significant bits of CSD do not include bits 7 and 6
@@ -323,11 +400,11 @@ static uint8_t SDCARD_read_card_size(void) {
 
   // Card Capacity = (C_SIZE + 1) * 512 KByte
   // See Section 5.3.3 (pg. 123) in SD Card specs
-  num_blocks = (csd_c_size + 1);
-  card_capacity = num_blocks * 512;
+  SDCARD_num_blocks = (csd_c_size + 1);
+  card_capacity = SDCARD_num_blocks * 512;
 
-  snprintf(msg, 100,
-    "Card size: %lu KB\r\nNum blocks: %lu\r\n", card_capacity, num_blocks);
+  snprintf(msg, 64,
+    "Card size: %lu KB\r\nNum blocks: %lu\r\n", card_capacity, SDCARD_num_blocks);
   UWRITE_print_buff(msg);
 
   return 1;
