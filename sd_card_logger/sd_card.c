@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "sd_card.h"
 #include "uwrite.h"
 
@@ -37,36 +38,38 @@ void SDCARD_init(void) {
 
   CHIP_SELECT;
 
-  // Send command to go into idle state
+  // Send command to go into idle state (CMD0)
   // Response should indicate idle state (1 byte)
+  //----- DEBUG
+  UWRITE_print_buff("Sending GO_IDLE_STATE     (CMD0) ... got ");
+  //----- DEBUG
+
   SDCARD_send_command(SDCMD_GO_IDLE_STATE,
                       SDARG_GO_IDLE_STATE,
                       SDSFX_GO_IDLE_STATE); 
   uint8_t idle_cmd_response = SDCARD_get_response();
+
+  //----- DEBUG
+  UWRITE_print_byte(&idle_cmd_response);
+  //----- DEBUG
+
   if (idle_cmd_response == ERROR_BYTE)
     return;
   else if (idle_cmd_response != SDRES_IN_IDLE_STATE_OK)
     return;
 
-  // -------- TEST: SEND AN EXTRA 0XFF BEFORE SENDING NEXT COMMAND
-  //uint8_t spi_data_register =  SPI_exchange_byte(HIGH_BYTE);
-  // --------
-
-  //----- DEBUG
-  //UWRITE_print_buff("FIRST EXTRA HIGH BYTE response: ");
-  //UWRITE_print_byte(&spi_data_register);
-  //----- DEBUG
-
-
-  // Send command to request interface condition
+  // Send command to request interface condition (CMD8)
   // Response should indicate idle state (and the condition, another 4 bytes) 
+  //----- DEBUG
+  UWRITE_print_buff("Sending SEND_IF_COND      (CMD8) ... got ");
+  //----- DEBUG
+
   SDCARD_send_command(SDCMD_SEND_IF_COND,
                       SDARG_SEND_IF_COND,
                       SDSFX_SEND_IF_COND);
   uint8_t cond_response = SDCARD_get_response();
 
   //----- DEBUG
-  UWRITE_print_buff("SEND_IF_COND response: ");
   UWRITE_print_byte(&cond_response);
   //----- DEBUG
 
@@ -75,30 +78,22 @@ void SDCARD_init(void) {
   else if (cond_response != SDRES_IN_IDLE_STATE_OK)
     return;
   
-  // -------- TEST: SEND AN EXTRA 0XFF BEFORE SENDING NEXT COMMAND
-  //spi_data_register =  SPI_exchange_byte(HIGH_BYTE);
-  //spi_data_register =  SPI_exchange_byte(HIGH_BYTE);
-  //spi_data_register =  SPI_exchange_byte(HIGH_BYTE);
-  // --------
-
-  //----- DEBUG
-  //UWRITE_print_buff("SECOND EXTRA HIGH BYTE response: ");
-  //UWRITE_print_byte(&spi_data_register);
-  //----- DEBUG
-
   uint8_t op_cond_response;
   uint8_t retry_index;
   for (retry_index = 0; retry_index < SDCARD_MAX_RETRIES; retry_index++) {
-    // Before we send the operation condition command
-    // we have to send the Application Specific Command
+    // Before we send the operation condition command (ACMD41)
+    // we have to send the Application Specific Command (CMD55)
     // Response should indicate idle state
+    //----- DEBUG
+    UWRITE_print_buff("Sending APP_CMD          (CMD55) ... got ");
+    //----- DEBUG
+
     SDCARD_send_command(SDCMD_APP_CMD,
                         SDARG_APP_CMD,
                         SDSFX_APP_CMD);
     uint8_t app_response = SDCARD_get_response();
 
     //----- DEBUG
-    UWRITE_print_buff("SEND_APP_COND response: ");
     UWRITE_print_byte(&app_response);
     //----- DEBUG
 
@@ -107,13 +102,16 @@ void SDCARD_init(void) {
     else if (app_response != SDRES_IN_IDLE_STATE_OK)
       return;
   
+    //----- DEBUG
+    UWRITE_print_buff("Sending SD_SEND_OP_COND (ACMD41) ... got ");
+    //----- DEBUG
+
     SDCARD_send_command(SDCMD_SD_SEND_OP_COND,
                         SDARG_SD_SEND_OP_COND,
                         SDSFX_SD_SEND_OP_COND);
     op_cond_response = SDCARD_get_response();
 
     //----- DEBUG
-    UWRITE_print_buff("SEND_OP_COND response: ");
     UWRITE_print_byte(&op_cond_response);
     //----- DEBUG
 
@@ -126,13 +124,16 @@ void SDCARD_init(void) {
     return;
 
   // Verify that the card is a high capacity card
+  //----- DEBUG
+  UWRITE_print_buff("Sending READ_OCR         (CMD58) ... got ");
+  //----- DEBUG
+
   SDCARD_send_command(SDCMD_READ_OCR,
                       SDARG_READ_OCR,
                       SDSFX_READ_OCR);
   uint8_t read_ocr_response = SDCARD_get_response();
 
   //----- DEBUG
-  UWRITE_print_buff("READ_OCR response: ");
   UWRITE_print_byte(&read_ocr_response);
   //----- DEBUG
 
@@ -146,7 +147,7 @@ void SDCARD_init(void) {
   SPSR |= (1 << SPI2X);
   SPCR &= ~(1 << SPR1);
 
-  // TODO: Read the card size
+  // Read the card size
   SDCARD_read_card_size(); 
 
   // TODO: Find the next available block for writing
@@ -173,8 +174,16 @@ static void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suff
   int i;
   uint8_t response;
   for (i = 0; i < 7; i++) {
-    UWRITE_print_buff("Sending 0xFF\r\n");
+    //----- DEBUG
+    //UWRITE_print_buff("Sending 0xFF before cmd ... got ");
+    //----- DEBUG
+
     response = SPI_exchange_byte(0xFF);
+
+    //----- DEBUG
+    //UWRITE_print_byte(&response);
+    //UWRITE_print_buff("\r\n");
+    //----- DEBUG
 
     if (response == 0xFF)
       break;
@@ -200,7 +209,17 @@ static uint8_t SDCARD_get_response(void) {
   // Poll the card for a response no more than SDCARD_POLL_LIMIT times
   uint8_t poll_index;
   for (poll_index = 0; poll_index < SDCARD_POLL_LIMIT; poll_index++) {
+    //----- DEBUG
+    //UWRITE_print_buff("Sending 0xFF for response ... got ");
+    //----- DEBUG
+
     uint8_t response = SPI_exchange_byte(JUNK_BYTE);
+
+    //----- DEBUG
+    //UWRITE_print_byte(&response);
+    //UWRITE_print_buff("\r\n");
+    //----- DEBUG
+
 
     if (!(response & MS_BIT))
       return response; 
@@ -211,7 +230,81 @@ static uint8_t SDCARD_get_response(void) {
 
 /* Reads the SD card's capacity. */
 static uint8_t SDCARD_read_card_size(void) {
-  UWRITE_print_buff("Reading card size\r\n");
+  //----- DEBUG
+  UWRITE_print_buff("\r\nReading card size\r\n");
+  UWRITE_print_buff("Sending SEND_CSD          (CMD9) ... got ");
+  //----- DEBUG
+
+  SDCARD_send_command(SDCMD_SEND_CSD,
+                      SDARG_SEND_CSD,
+                      SDSFX_SEND_CSD);
+  uint8_t send_csd_response = SDCARD_get_response();
+
+  //----- DEBUG
+  UWRITE_print_byte(&send_csd_response);
+  //----- DEBUG
+
+  //----- DEBUG
+  UWRITE_print_buff("Sending SEND_CSD (again)  (CMD9) ... got ");
+  //----- DEBUG
+
+  SDCARD_send_command(SDCMD_SEND_CSD,
+                      SDARG_SEND_CSD,
+                      SDSFX_SEND_CSD);
+  send_csd_response = SDCARD_get_response();
+
+  //----- DEBUG
+  UWRITE_print_byte(&send_csd_response);
+  //----- DEBUG
+
+  // Expecting 0x00 reponse
+  if (send_csd_response != 0x00) {
+    return 0;
+  }
+
+  // Expecting start token (0xFE) + 16 bytes of data + 16-bit CRC
+  uint16_t grab_index;
+  uint8_t response;
+
+  // Send JUNK_BYTE until start token is received, then read the CSD register
+  // See Section 7.2.6, Figure 7-3, and Section 7.3.3.2 in SD Card Specs
+  for (grab_index = 0; grab_index < 0xFF; grab_index++) {
+    response = SPI_exchange_byte(JUNK_BYTE); 
+
+    if (response == START_TOKEN) { 
+      UWRITE_print_buff("CSD START_TOKEN received\r\n");
+      break;
+    }
+  }
+  if (response != START_TOKEN) {
+    return 0;
+  }
+
+  uint8_t csd_register[16];
+
+  // Read the 16-byte CSD register
+  UWRITE_print_buff("Reading CSD register...\r\n");
+  for (grab_index = 0; grab_index < 16; grab_index++) {
+    csd_register[grab_index] = SPI_exchange_byte(JUNK_BYTE);    
+  }
+
+  // Ignore 16-bit CRC
+  //SPI_exchange_byte(JUNK_BYTE);
+  //SPI_exchange_byte(JUNK_BYTE);
+
+  // Print the CSD register data
+  char msg[100];
+  snprintf(msg, 100,
+    "%02X %02X %02X %02X %02X %02X %02X %02X ",
+    csd_register[0], csd_register[1], csd_register[2], csd_register[3],
+    csd_register[4], csd_register[5], csd_register[6], csd_register[7]);
+  UWRITE_print_buff(msg);
+
+  snprintf(msg, 100,
+    "%02X %02X %02X %02X %02X %02X %02X %02X\r\n",
+    csd_register[8], csd_register[9], csd_register[10], csd_register[11],
+    csd_register[12], csd_register[13], csd_register[14], csd_register[15]);
+  UWRITE_print_buff(msg);
 
   return 0;
 }
