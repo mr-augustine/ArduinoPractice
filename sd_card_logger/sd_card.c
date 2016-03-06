@@ -140,18 +140,20 @@ void SDCARD_init(void) {
   if (read_ocr_response != SDRES_READ_OCR)
     return;
 
-  // Turn on DEBUG LED
-  PORTD |= (1 << 4);
-
   // Increase SPI clock to 2 MHz
   SPSR |= (1 << SPI2X);
   SPCR &= ~(1 << SPR1);
 
   // Read the card size
-  SDCARD_read_card_size(); 
+  if (!SDCARD_read_card_size()) {
+    return;
+  }
 
   // TODO: Find the next available block for writing
   // TODO: Set an external variable to indicate that the SD card is good to go
+
+  // Turn on DEBUG LED
+  PORTD |= (1 << 4);
 }
 
 /* Sends the specified byte on the SPI output.
@@ -306,7 +308,29 @@ static uint8_t SDCARD_read_card_size(void) {
     csd_register[12], csd_register[13], csd_register[14], csd_register[15]);
   UWRITE_print_buff(msg);
 
-  return 0;
+  // Extract the C_SIZE value
+  uint32_t csd_c_size;
+  uint32_t num_blocks;
+  uint32_t card_capacity;
+
+  // The most significant bits of CSD do not include bits 7 and 6
+  // See Table 5-16 in SD Card specs
+  csd_c_size = csd_register[7] & 0b00111111;
+  csd_c_size = csd_c_size << 8;
+  csd_c_size |= csd_register[8];
+  csd_c_size = csd_c_size << 8;
+  csd_c_size |= csd_register[9];
+
+  // Card Capacity = (C_SIZE + 1) * 512 KByte
+  // See Section 5.3.3 (pg. 123) in SD Card specs
+  num_blocks = (csd_c_size + 1);
+  card_capacity = num_blocks * 512;
+
+  snprintf(msg, 100,
+    "Card size: %lu KB\r\nNum blocks: %lu\r\n", card_capacity, num_blocks);
+  UWRITE_print_buff(msg);
+
+  return 1;
 }
 
 /* Writes a byte to the SD card at the specified address */
