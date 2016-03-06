@@ -67,7 +67,7 @@ void UWRITE_print_byte(void * a_byte) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
-        snprintf(buffer, BUFF_SIZE, "0x%02X\r\n", *((char *) a_byte));
+        snprintf(buffer, BUFF_SIZE, "0x%02X\r\n", *((uint8_t *) a_byte));
         
         while (*char_ptr != 0) {
             while TX_REG_NOT_READY() {;}

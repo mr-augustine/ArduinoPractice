@@ -40,6 +40,10 @@
 #define SDSFX_READ_OCR            0x1 //CRC doesn't matter, just 0b1
 #define SDRES_READ_OCR            0x0
 
+#define SDCMD_SEND_CSD            0x9 //CMD9; gets R1 response (Table 7-3)
+#define SDARG_SEND_CSD            0X0
+#define SDSFX_SEND_CSD            0x0
+
 #define SDCMD_READ_SINGLE_BLOCK   0x11 //CMD17; gets R1 response
 
 #define SDCMD_WRITE_BLOCK         0x18 //CMD24; gets R1 response
@@ -60,6 +64,7 @@
 #define SDCARD_MAX_RETRIES        0xFF // max retries for send op condition
 #define MS_BIT                    0x80
 #define LS_BIT                    0x01
+#define START_TOKEN               0xFE
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
