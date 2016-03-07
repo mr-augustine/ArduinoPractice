@@ -3,9 +3,15 @@
 #include "uwrite.h"
 
 static uint8_t SPI_exchange_byte(uint8_t byte);
+static int8_t SDCARD_check_block(uint32_t block_address);
+static uint8_t SDCARD_find_available_block(void);
 static uint8_t SDCARD_get_response(void);
 static uint8_t SDCARD_read_card_size(void);
 static void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix);
+
+volatile uint8_t SDCARD_enabled;
+uint32_t SDCARD_next_block;
+uint32_t SDCARD_num_blocks;
 
 void SPI_init(void) {
   SPI_CS_DDR |= (1 << SPI_CS); // set chip select pin as an output
@@ -140,18 +146,30 @@ void SDCARD_init(void) {
   if (read_ocr_response != SDRES_READ_OCR)
     return;
 
-  // Turn on DEBUG LED
-  PORTD |= (1 << 4);
-
   // Increase SPI clock to 2 MHz
   SPSR |= (1 << SPI2X);
   SPCR &= ~(1 << SPR1);
 
   // Read the card size
-  SDCARD_read_card_size(); 
+  if (!SDCARD_read_card_size()) {
+    return;
+  }
 
-  // TODO: Find the next available block for writing
+  // Find the next available block for writing
+  if (!SDCARD_find_available_block()) {
+    UWRITE_print_buff("Could not find a block to write :-(\r\n");
+    return;
+  }
+
+  //----- DEBUG
+  UWRITE_print_buff("First available block: ");
+  UWRITE_print_long(&SDCARD_next_block);
+  //----- DEBUG
+
   // TODO: Set an external variable to indicate that the SD card is good to go
+
+  // Turn on DEBUG LED
+  PORTD |= (1 << 4);
 }
 
 /* Sends the specified byte on the SPI output.
@@ -166,6 +184,166 @@ static uint8_t SPI_exchange_byte(uint8_t byte) {
   while (!(SPSR & (1 << SPIF))) {}
 
   return SPDR;
+}
+
+// Returns 0 if block is available, 1 if block is occupied, -1 otherwise
+static int8_t SDCARD_check_block(uint32_t block_address) {
+  uint8_t response;
+  union {
+    uint8_t bytes[4];
+    uint32_t dword;
+  } block_data;
+
+  char msg[64];
+  snprintf(msg, 64, "Reading block %lu\r\n", block_address);
+  UWRITE_print_buff(msg);
+
+  //----- DEBUG
+  UWRITE_print_buff("Sending READ_SINGLE_BLOCK (CMD17) ... got ");
+  //----- DEBUG
+
+  SDCARD_send_command(SDCMD_READ_SINGLE_BLOCK,
+                      block_address,
+                      SDSFX_READ_SINGLE_BLOCK);
+  uint8_t read_block_response = SDCARD_get_response();
+
+  //----- DEBUG
+  // Expecting 0x00
+  UWRITE_print_byte(&read_block_response);
+  //----- DEBUG
+
+  uint8_t poll_index;
+  for (poll_index = 0; poll_index < 0xFF; poll_index++) {
+    response = SPI_exchange_byte(JUNK_BYTE); 
+
+    if (response == START_TOKEN) { 
+      UWRITE_print_buff("DATA START_TOKEN received\r\n");
+      break;
+    }
+  }
+  if (response != START_TOKEN) {
+    return -1;
+  }
+
+  // Read the first 32 bits of the block
+  block_data.bytes[0] = SPI_exchange_byte(JUNK_BYTE);
+  block_data.bytes[1] = SPI_exchange_byte(JUNK_BYTE); 
+  block_data.bytes[2] = SPI_exchange_byte(JUNK_BYTE);
+  block_data.bytes[3] = SPI_exchange_byte(JUNK_BYTE); 
+
+  //----- DEBUG
+  UWRITE_print_long(block_data.bytes);
+  //----- DEBUG
+
+  // Ignore the remainder of the block
+  // ignore_index should go up to (512 - 4) bytes = 508 bytes
+  uint16_t ignore_index;
+  for (ignore_index = 0; ignore_index < 508; ignore_index++) {
+    SPI_exchange_byte(JUNK_BYTE);
+  }
+
+  //----- DEBUG
+  UWRITE_print_buff("Final ignored byte: ");
+  UWRITE_print_byte(&ignore_index);
+  //----- DEBUG
+
+  PORTD |= (1 << 4);
+  // Ignore the 16-bit CRC
+  SPI_exchange_byte(JUNK_BYTE);
+  SPI_exchange_byte(JUNK_BYTE);
+
+  if (block_data.dword == 0xDADAFEED) {
+    return 1;
+  }
+
+  return 0;
+}
+  
+// Returns 1 if successful; 0 otherwise.
+static uint8_t SDCARD_find_available_block(void) {
+  int8_t check_block_result;   // this value can be -1
+
+  // Check the first block since it's likely to be available because we clear
+  // the SD card after every run.
+  check_block_result = SDCARD_check_block(0);
+
+  // If the first block is available, then use it.
+  if (check_block_result == 0) {
+    SDCARD_next_block = 0;
+
+    return 1;
+  } else if (check_block_result == -1) {
+    return 0;
+  }
+
+  // Since the first block isn't available, perform a binary search to find
+  // the first available block.
+  uint32_t min_addr;
+  uint32_t max_addr;
+  char msg[64];
+
+  min_addr = 1;
+  max_addr = SDCARD_num_blocks - 1;
+
+  while (max_addr >= min_addr) {
+    uint32_t midpoint_addr = min_addr + (max_addr - min_addr) / 2;
+    uint32_t curr_block_check_result;
+
+    snprintf(msg, sizeof(msg),
+      "Checking blocks using [min: %lu, max: %lu, mid: %lu]\r\n",
+      min_addr, max_addr, midpoint_addr);
+    UWRITE_print_buff(msg);
+
+    curr_block_check_result = SDCARD_check_block(midpoint_addr);
+
+    // OPTION 1: The current block is available
+    // Check whether the preceding block is occupied. If it is, then use
+    // the current block. If it isn't, then keep searching.
+    if (curr_block_check_result == 0) {
+      uint32_t prev_block_check_result;
+
+      prev_block_check_result = SDCARD_check_block(midpoint_addr - 1); 
+
+      // OPTION 1.A: The preceding block is occupied.
+      // So use the current block.
+      if (prev_block_check_result == 1) {
+        SDCARD_next_block = midpoint_addr;
+
+        return 1;
+      }
+
+      // OPTION 1.B: The preceding block is also available.
+      // So search the first half of the search space.
+      else if (prev_block_check_result == 0) {
+        max_addr = midpoint_addr - 1;
+
+        continue;
+      }
+
+      // OPTION 1.C: There was an error checking the preceding block.
+      else {
+        return 0;
+      }
+    }
+
+    // OPTION 2: The current block is occupied.
+    // So search the second half of the search space.
+    else if (curr_block_check_result == 1) {
+      min_addr = midpoint_addr + 1;
+
+      continue;
+    }
+
+    // OPTION 3: There was an error checking the current block.
+    else {
+      return 0;
+    }
+  }
+  // If we get this far, then we didn't find a free block. Either the card is
+  // full or the blocks are not continguous. So use the first block.
+  SDCARD_next_block = 0;
+
+  return 1;
 }
 
 /* Sends the specified command to the SD card */
@@ -263,12 +441,12 @@ static uint8_t SDCARD_read_card_size(void) {
   }
 
   // Expecting start token (0xFE) + 16 bytes of data + 16-bit CRC
-  uint16_t grab_index;
+  uint16_t poll_index;
   uint8_t response;
 
   // Send JUNK_BYTE until start token is received, then read the CSD register
   // See Section 7.2.6, Figure 7-3, and Section 7.3.3.2 in SD Card Specs
-  for (grab_index = 0; grab_index < 0xFF; grab_index++) {
+  for (poll_index = 0; poll_index < 0xFF; poll_index++) {
     response = SPI_exchange_byte(JUNK_BYTE); 
 
     if (response == START_TOKEN) { 
@@ -281,11 +459,12 @@ static uint8_t SDCARD_read_card_size(void) {
   }
 
   uint8_t csd_register[16];
+  uint8_t csd_byte_index;
 
   // Read the 16-byte CSD register
   UWRITE_print_buff("Reading CSD register...\r\n");
-  for (grab_index = 0; grab_index < 16; grab_index++) {
-    csd_register[grab_index] = SPI_exchange_byte(JUNK_BYTE);    
+  for (csd_byte_index = 0; csd_byte_index < 16; csd_byte_index++) {
+    csd_register[csd_byte_index] = SPI_exchange_byte(JUNK_BYTE);    
   }
 
   // Ignore 16-bit CRC
@@ -293,20 +472,41 @@ static uint8_t SDCARD_read_card_size(void) {
   //SPI_exchange_byte(JUNK_BYTE);
 
   // Print the CSD register data
-  char msg[100];
-  snprintf(msg, 100,
+  char msg[64];
+  snprintf(msg, 64,
     "%02X %02X %02X %02X %02X %02X %02X %02X ",
     csd_register[0], csd_register[1], csd_register[2], csd_register[3],
     csd_register[4], csd_register[5], csd_register[6], csd_register[7]);
   UWRITE_print_buff(msg);
 
-  snprintf(msg, 100,
+  snprintf(msg, 64,
     "%02X %02X %02X %02X %02X %02X %02X %02X\r\n",
     csd_register[8], csd_register[9], csd_register[10], csd_register[11],
     csd_register[12], csd_register[13], csd_register[14], csd_register[15]);
   UWRITE_print_buff(msg);
 
-  return 0;
+  // Extract the C_SIZE value and calculate the card's capacity
+  uint32_t csd_c_size;
+  uint32_t card_capacity;
+
+  // The most significant bits of CSD do not include bits 7 and 6
+  // See Table 5-16 in SD Card specs
+  csd_c_size = csd_register[7] & 0b00111111;
+  csd_c_size = csd_c_size << 8;
+  csd_c_size |= csd_register[8];
+  csd_c_size = csd_c_size << 8;
+  csd_c_size |= csd_register[9];
+
+  // Card Capacity = (C_SIZE + 1) * 512 KByte
+  // See Section 5.3.3 (pg. 123) in SD Card specs
+  SDCARD_num_blocks = (csd_c_size + 1);
+  card_capacity = SDCARD_num_blocks * 512;
+
+  snprintf(msg, 64,
+    "Card size: %lu KB\r\nNum blocks: %lu\r\n", card_capacity, SDCARD_num_blocks);
+  UWRITE_print_buff(msg);
+
+  return 1;
 }
 
 /* Writes a byte to the SD card at the specified address */
