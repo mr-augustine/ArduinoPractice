@@ -4,6 +4,7 @@
 
 static uint8_t SPI_exchange_byte(uint8_t byte);
 static int8_t SDCARD_check_block(uint32_t block_address);
+static uint8_t SDCARD_find_available_block(void);
 static uint8_t SDCARD_get_response(void);
 static uint8_t SDCARD_read_card_size(void);
 static void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix);
@@ -154,8 +155,17 @@ void SDCARD_init(void) {
     return;
   }
 
-  // TODO: Find the next available block for writing
-  SDCARD_check_block(0);
+  // Find the next available block for writing
+  if (!SDCARD_find_available_block()) {
+    UWRITE_print_buff("Could not find a block to write :-(\r\n");
+    return;
+  }
+
+  //----- DEBUG
+  UWRITE_print_buff("First available block: ");
+  UWRITE_print_long(&SDCARD_next_block);
+  //----- DEBUG
+
   // TODO: Set an external variable to indicate that the SD card is good to go
 
   // Turn on DEBUG LED
@@ -176,6 +186,7 @@ static uint8_t SPI_exchange_byte(uint8_t byte) {
   return SPDR;
 }
 
+// Returns 0 if block is available, 1 if block is occupied, -1 otherwise
 static int8_t SDCARD_check_block(uint32_t block_address) {
   uint8_t response;
   union {
@@ -197,6 +208,7 @@ static int8_t SDCARD_check_block(uint32_t block_address) {
   uint8_t read_block_response = SDCARD_get_response();
 
   //----- DEBUG
+  // Expecting 0x00
   UWRITE_print_byte(&read_block_response);
   //----- DEBUG
 
@@ -232,7 +244,7 @@ static int8_t SDCARD_check_block(uint32_t block_address) {
 
   //----- DEBUG
   UWRITE_print_buff("Final ignored byte: ");
-  UWRITE_print_byte(&ignore_byte);
+  UWRITE_print_byte(&ignore_index);
   //----- DEBUG
 
   PORTD |= (1 << 4);
@@ -247,6 +259,93 @@ static int8_t SDCARD_check_block(uint32_t block_address) {
   return 0;
 }
   
+// Returns 1 if successful; 0 otherwise.
+static uint8_t SDCARD_find_available_block(void) {
+  int8_t check_block_result;   // this value can be -1
+
+  // Check the first block since it's likely to be available because we clear
+  // the SD card after every run.
+  check_block_result = SDCARD_check_block(0);
+
+  // If the first block is available, then use it.
+  if (check_block_result == 0) {
+    SDCARD_next_block = 0;
+
+    return 1;
+  } else if (check_block_result == -1) {
+    return 0;
+  }
+
+  // Since the first block isn't available, perform a binary search to find
+  // the first available block.
+  uint32_t min_addr;
+  uint32_t max_addr;
+  char msg[64];
+
+  min_addr = 1;
+  max_addr = SDCARD_num_blocks - 1;
+
+  while (max_addr >= min_addr) {
+    uint32_t midpoint_addr = min_addr + (max_addr - min_addr) / 2;
+    uint32_t curr_block_check_result;
+
+    snprintf(msg, sizeof(msg),
+      "Checking blocks using [min: %lu, max: %lu, mid: %lu]\r\n",
+      min_addr, max_addr, midpoint_addr);
+    UWRITE_print_buff(msg);
+
+    curr_block_check_result = SDCARD_check_block(midpoint_addr);
+
+    // OPTION 1: The current block is available
+    // Check whether the preceding block is occupied. If it is, then use
+    // the current block. If it isn't, then keep searching.
+    if (curr_block_check_result == 0) {
+      uint32_t prev_block_check_result;
+
+      prev_block_check_result = SDCARD_check_block(midpoint_addr - 1); 
+
+      // OPTION 1.A: The preceding block is occupied.
+      // So use the current block.
+      if (prev_block_check_result == 1) {
+        SDCARD_next_block = midpoint_addr;
+
+        return 1;
+      }
+
+      // OPTION 1.B: The preceding block is also available.
+      // So search the first half of the search space.
+      else if (prev_block_check_result == 0) {
+        max_addr = midpoint_addr - 1;
+
+        continue;
+      }
+
+      // OPTION 1.C: There was an error checking the preceding block.
+      else {
+        return 0;
+      }
+    }
+
+    // OPTION 2: The current block is occupied.
+    // So search the second half of the search space.
+    else if (curr_block_check_result == 1) {
+      min_addr = midpoint_addr + 1;
+
+      continue;
+    }
+
+    // OPTION 3: There was an error checking the current block.
+    else {
+      return 0;
+    }
+  }
+  // If we get this far, then we didn't find a free block. Either the card is
+  // full or the blocks are not continguous. So use the first block.
+  SDCARD_next_block = 0;
+
+  return 1;
+}
+
 /* Sends the specified command to the SD card */
 static void SDCARD_send_command(uint8_t command, uint32_t argument, uint8_t suffix) {
   // Send up to 8 high bytes until 0xFF is received
