@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "sd_card.h"
+#include "statevars.h"
 #include "uwrite.h"
 
 static uint8_t SPI_exchange_byte(uint8_t byte);
@@ -167,9 +168,9 @@ void SDCARD_init(void) {
   //----- DEBUG
 
   // TODO: Set an external variable to indicate that the SD card is good to go
+  SDCARD_enabled = 1;
 
-  // Turn on DEBUG LED
-  PORTD |= (1 << 4);
+  return;
 }
 
 /* Sends the specified byte on the SPI output.
@@ -252,6 +253,8 @@ static int8_t SDCARD_check_block(uint32_t block_address) {
   SPI_exchange_byte(JUNK_BYTE);
   SPI_exchange_byte(JUNK_BYTE);
 
+  // Hardcoding the frame prefix for now
+  // TODO: Have this reference a #defined value
   if (block_data.dword == 0xDADAFEED) {
     return 1;
   }
@@ -509,7 +512,67 @@ static uint8_t SDCARD_read_card_size(void) {
   return 1;
 }
 
-/* Writes a byte to the SD card at the specified address */
-/*void SDCARD_write_byte(uint32_t address, uint8_t byte) {
+/* Writes the next chunk of data to the SD card */
+void SDCARD_write_data(void) {
+  if (!SDCARD_enabled) {
+    return;
+  }
 
-}*/
+  // If the SD card is full, disable logging
+  if (SDCARD_next_block >= SDCARD_num_blocks) {
+    SDCARD_enabled = 0;
+    return;
+  }
+
+  //----- DEBUG
+  UWRITE_print_buff("Sending WRITE_BLOCK   (CMD18) ... got");
+  //----- DEBUG
+  SDCARD_send_command(SDCMD_WRITE_BLOCK,
+                      SDCARD_next_block,
+                      SDSFX_WRITE_BLOCK);
+  uint8_t write_block_response = SDCARD_get_response();
+
+  //----- DEBUG
+  UWRITE_print_byte(&write_block_response);
+  //----- DEBUG
+
+  if (write_block_response == ERROR_BYTE) {
+    SDCARD_enabled = 0;
+    return;
+  }
+
+  SDCARD_next_block = SDCARD_next_block + 1;
+  SPI_exchange_byte(0xFE);
+
+  //----- DEBUG
+  UWRITE_print_buff("Writing data... \r\n");
+  //----- DEBUG
+  // Write the robot's data
+  uint16_t byte_index;
+  for (byte_index = 0; byte_index < sizeof(statevars_t); byte_index++) {
+    SPI_exchange_byte(((uint8_t *)&statevars)[byte_index]);
+  }
+
+  // Fill the remaining blocks with 0xAA
+  // This should never occur since the statevars_t is padded to 
+  // fill a block
+  for (; byte_index < SDCARD_BYTES_PER_BLOCK; byte_index++) {
+    SPI_exchange_byte(PADDING_BYTE);
+  }
+
+  // Ignore the 16-bit CRC
+  SPI_exchange_byte(JUNK_BYTE);
+  SPI_exchange_byte(JUNK_BYTE);
+
+  if (SPI_exchange_byte(JUNK_BYTE) != 0xE5) {
+    SDCARD_enabled = 0;
+    return;
+  }  
+
+  //----- DEBUG
+  UWRITE_print_buff("Done!\r\n");
+  //----- DEBUG
+
+  return;
+}
+

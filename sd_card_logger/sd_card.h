@@ -48,6 +48,7 @@
 #define SDSFX_READ_SINGLE_BLOCK   0x0
 
 #define SDCMD_WRITE_BLOCK         0x18 //CMD24; gets R1 response
+#define SDSFX_WRITE_BLOCK         0x0
 
 #define SDCMD_SEND_STATUS         0xD //CMD13
 #define SDRES_DATA_ACCEPTED       0x2
@@ -66,6 +67,7 @@
 #define MS_BIT                    0x80
 #define LS_BIT                    0x01
 #define START_TOKEN               0xFE
+#define PADDING_BYTE              0xAA // used to pad a block; just in case
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -76,3 +78,5 @@ void SPI_init(void);
 /* Initializes the SD card to run in SPI mode. */
 void SDCARD_init(void);
 
+/* Writes the next chunk of data to the SD card */
+void SDCARD_write_data(void);
