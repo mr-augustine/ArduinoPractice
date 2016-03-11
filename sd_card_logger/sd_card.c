@@ -173,6 +173,10 @@ void SDCARD_init(void) {
   return;
 }
 
+uint8_t SDCARD_is_enabled(void) {
+  return SDCARD_enabled;
+}
+
 /* Sends the specified byte on the SPI output.
    Assumes that the target device was already selected.
    Returns the byte received in exchange.

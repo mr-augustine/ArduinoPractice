@@ -78,7 +78,12 @@ void SPI_init(void);
 /* Initializes the SD card to run in SPI mode. */
 void SDCARD_init(void);
 
-/* Reads the specified block from the SD card */
+/* Returns 1 if logging is enabled; 0 otherwise */
+uint8_t SDCARD_is_enabled(void);
+
+/* Reads the block at the specified address and writes its contents to
+   block_buff. Returns 1 if successful; 0 otherwise.
+*/
 uint8_t SDCARD_read_block(uint32_t block_address, void * block_buff);
 
 /* Writes the next chunk of data to the SD card */
