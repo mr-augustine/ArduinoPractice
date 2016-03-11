@@ -223,6 +223,7 @@ static int8_t SDCARD_check_block(uint32_t block_address) {
     }
   }
   if (response != START_TOKEN) {
+    UWRITE_print_buff("DATA START_TOKEN timed out\r\n");
     return -1;
   }
 
@@ -407,6 +408,74 @@ static uint8_t SDCARD_get_response(void) {
   }
 
   return ERROR_BYTE;
+}
+
+// Returns 1 if successful; 0 otherwise
+uint8_t SDCARD_read_block(uint32_t block_address, void * block_buff) {
+  if (!SDCARD_enabled) {
+    UWRITE_print_buff("SDcard not enabled!\r\n");
+    return 0;
+  }
+
+  if (block_address >= SDCARD_num_blocks) {
+    UWRITE_print_buff("Invalid block address!\r\n");
+    return 0;
+  }
+
+  if (block_buff == NULL) {
+    UWRITE_print_buff("Invalid block buffer!\r\n");
+    return 0;
+  }
+
+  char msg[64];
+  snprintf(msg, 64, "Reading block %lu\r\n", block_address);
+  UWRITE_print_buff(msg);
+
+  //----- DEBUG
+  UWRITE_print_buff("Sending READ_SINGLE_BLOCK (CMD17) ... got ");
+  //----- DEBUG
+
+  SDCARD_send_command(SDCMD_READ_SINGLE_BLOCK,
+                      block_address,
+                      SDSFX_READ_SINGLE_BLOCK);
+  uint8_t read_block_response = SDCARD_get_response();
+
+  //----- DEBUG
+  // Expecting 0x00
+  UWRITE_print_byte(&read_block_response);
+  //----- DEBUG
+
+  uint8_t response;
+  uint8_t poll_index;
+  for (poll_index = 0; poll_index < 0xFF; poll_index++) {
+    response = SPI_exchange_byte(JUNK_BYTE); 
+
+    if (response == START_TOKEN) { 
+      UWRITE_print_buff("DATA START_TOKEN received\r\n");
+      break;
+    }
+  }
+  if (response != START_TOKEN) {
+    return 0;
+  }
+
+  // Read all of the bytes in the block
+  uint16_t read_index;
+  uint8_t * read_bytes = (uint8_t *) block_buff;
+  for (read_index = 0; read_index < SDCARD_BYTES_PER_BLOCK; read_index++) {
+    read_bytes[read_index] = SPI_exchange_byte(JUNK_BYTE); 
+  }
+
+  // Ignore the 16-bit CRC
+  SPI_exchange_byte(JUNK_BYTE);
+  SPI_exchange_byte(JUNK_BYTE);
+
+  //----- DEBUG
+  snprintf(msg, 64, "Finished reading block %lu\r\n", block_address);
+  UWRITE_print_buff(msg);
+  //----- DEBUG
+
+  return 1;
 }
 
 /* Reads the SD card's capacity. */
