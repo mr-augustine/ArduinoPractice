@@ -78,5 +78,8 @@ void SPI_init(void);
 /* Initializes the SD card to run in SPI mode. */
 void SDCARD_init(void);
 
+/* Reads the specified block from the SD card */
+uint8_t SDCARD_read_block(uint32_t block_address, void * block_buff);
+
 /* Writes the next chunk of data to the SD card */
 void SDCARD_write_data(void);
