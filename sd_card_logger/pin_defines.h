@@ -1,14 +1,13 @@
 /*
-  Defines the pins for the sd_card_logger.
-  
-  Every physical wire connected to the Arduino is plugged into a pin.
-  And for each occupied pin, we define:
-    (1) the PORT it is on
-    (2) the Data Direction Register associated with that PORT
-    (3) the PORT's Pin Vector
-    (4) the Pin Vector address for the bit associated with the physical pin
-
-*/
+ * Defines the pins used on the Arduino.
+ *
+ * Every physical wire connected to the Arduino is plugged into a pin.
+ * And for each occupied pin, we define:
+ *   (1) the PORT it is on
+ *   (2) the Data Direction Register associated with that PORT
+ *   (3) the PORT's Pin Vector
+ *   (4) the Pin Vector address for the bit associated with the physical pin
+ */
 #ifndef _PIN_DEFINES_H_
 #define _PIN_DEFINES_H_
 
@@ -36,3 +35,4 @@
 
 
 #endif /* _PIN_DEFINES_H_ */
+
