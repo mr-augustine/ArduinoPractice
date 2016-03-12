@@ -1,22 +1,21 @@
+/*
+ *
+ */
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <stdio.h>
 
 #include "uwrite.h"
 
-#define RCIE0   7
-#define RXEN0   4
-#define TXEN0   3
-#define UCSZ01  2
-#define UCSZ00  1
-#define UDRE0   5
-
 #define TX_REG_NOT_READY() (!(UCSR0A & (1 << UDRE0)))
 
 static uint8_t uwrite_initialized;
 static char buffer[BUFF_SIZE];
 
-void UWRITE_init(void) {
+/*
+ * Initializes the USART port for writing.
+ */
+void uwrite_init(void) {
     // Disable interrupts before configuring USART
     cli();
 
@@ -46,24 +45,34 @@ void UWRITE_init(void) {
     return;
 }
 
-// Prints a null-terminated character buffer to the USART port
-void UWRITE_print_buff(char * character) {
+/*
+ * Prints a character buffer to the USART port.
+ * Assumes the character buffer is null-terminated.
+ *
+ * char_buff: a null-terminated character buffer
+ */
+void uwrite_print_buff(const char * char_buff) {
     if (uwrite_initialized) {
 
-        while (*character != 0) {
+        while (*char_buff != 0) {
             // Wait until the transmit data register is ready
             while TX_REG_NOT_READY() {;}
 
-            UDR0 = *character;
-            character++;
+            UDR0 = *char_buff;
+            char_buff++;
         }
     }
 
     return; 
 }
 
-// Prints a byte to the USART port as a hex value
-void UWRITE_print_byte(void * a_byte) {
+/*
+ * Prints a byte to the USART port as a hex value with a leading '0x'
+ * followed by a carriage return and newline.
+ *
+ * a_byte: a pointer to a byte value
+ */
+void uwrite_print_byte(const void * a_byte) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
@@ -80,8 +89,13 @@ void UWRITE_print_byte(void * a_byte) {
     return;
 }
 
-// Prints a short to the USART port as a hex value
-void UWRITE_print_short(void * a_short) {
+/*
+ * Prints a short to the USART port as a hex value with a leading '0x'
+ * followed by a carriage return and newline.
+ *
+ * a_short: a pointer to a short value
+ */
+void uwrite_print_short(const void * a_short) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
@@ -98,8 +112,13 @@ void UWRITE_print_short(void * a_short) {
     return;
 }
 
-// Prints a long to the USART port as a hex value
-void UWRITE_print_long(void * a_long) {
+/*
+ * Prints a long to the USART port as a hex value with a leading '0x'
+ * followed by a carriage return and newline.
+ *
+ * a_long: a pointer to a long value
+ */
+void uwrite_print_long(const void * a_long) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
@@ -115,3 +134,4 @@ void UWRITE_print_long(void * a_long) {
 
     return;
 }
+

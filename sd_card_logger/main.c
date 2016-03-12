@@ -1,3 +1,6 @@
+/*
+ * File: main.c
+ */
 #include <stdio.h>
 #include <string.h>
 #include "sd_card.h"
@@ -13,23 +16,23 @@ int main(void) {
     memset(&statevars, 0, sizeof(statevars));
     init_statevars(&statevars);
 
-    UWRITE_init();
-    UWRITE_print_buff("---Start---\r\n");
+    uwrite_init();
+    uwrite_print_buff("---Start---\r\n");
 
-    SPI_init();
-    SDCARD_init();
-    //SDCARD_write_data();
+    spi_init();
+    sdcard_init();
+    //sdcard_write_data();
 
     // Print the contents of a block
     char block_buff[SDCARD_BYTES_PER_BLOCK + 1]; 
     memset(block_buff, 0, sizeof(block_buff));
-    SDCARD_read_block(0, block_buff);
+    sdcard_read_block(0, block_buff);
 
-    UWRITE_print_buff("print_buff\r\n");
+    uwrite_print_buff("print_buff\r\n");
     print_block((uint8_t *)block_buff);
 
     // Turn on DEBUG LED if there were no issues
-    if (SDCARD_is_enabled()) {
+    if (sdcard_is_enabled()) {
         PORTD |= (1 << 4);
     }
 
@@ -63,7 +66,7 @@ void print_block(uint8_t * b) {
             "0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x \r\n",
             b[8*i], b[8*i+1], b[8*i+2], b[8*i+3],
             b[8*i+4], b[8*i+5], b[8*i+6], b[8*i+7]);
-        UWRITE_print_buff(msg);
+        uwrite_print_buff(msg);
     }
 
     return;

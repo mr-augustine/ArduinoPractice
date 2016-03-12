@@ -1,5 +1,8 @@
-#ifndef _STATEVARS_H
-#define _STATEVARS_H
+/*
+ *
+ */
+#ifndef _STATEVARS_H_
+#define _STATEVARS_H_
 
 typedef struct {
     uint32_t prefix;
@@ -17,5 +20,5 @@ typedef struct {
 
 extern statevars_t statevars;
 
-#endif
+#endif /* _STATEVARS_H_ */
 

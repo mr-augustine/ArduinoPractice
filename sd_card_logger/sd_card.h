@@ -1,9 +1,13 @@
 /*
-  Defines the macros, constants, and functions for the Secure Digital
-  High Capacity (SDHC) card. This library is intended to be very lightweight
-  in that all we want to do is write data to an SD card. That's it.
-
+ * File: sd_card.h
+ *
+ * Defines the macros and constants; and declares functions for the Secure Digital
+ * High Capacity (SDHC) card. This library is intended to be very lightweight
+ * in that all we want to do is write data to an SD card. That's it.
 */
+#ifndef _SD_CARD_H_
+#define _SD_CARD_H_
+
 #include <avr/io.h>
 #include "pin_defines.h"
 
@@ -73,18 +77,21 @@
 // Functions
 
 /* Configures the Arduino as the Master device with a clock rate of f_osc/8 */
-void SPI_init(void);
+void spi_init(void);
 
 /* Initializes the SD card to run in SPI mode. */
-void SDCARD_init(void);
+void sdcard_init(void);
 
 /* Returns 1 if logging is enabled; 0 otherwise */
-uint8_t SDCARD_is_enabled(void);
+uint8_t sdcard_is_enabled(void);
 
 /* Reads the block at the specified address and writes its contents to
    block_buff. Returns 1 if successful; 0 otherwise.
 */
-uint8_t SDCARD_read_block(uint32_t block_address, void * block_buff);
+uint8_t sdcard_read_block(uint32_t block_address, void * block_buff);
 
 /* Writes the next chunk of data to the SD card */
-void SDCARD_write_data(void);
+void sdcard_write_data(void);
+
+#endif /* _SD_CARD_H_ */
+
