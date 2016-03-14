@@ -14,8 +14,7 @@ int main(void) {
 
     if (button_is_pressed()) {
       led_turn_on();
-    } //else {
-    if (!button_is_pressed()) {
+    } else {
       led_turn_off();
     }
   }
