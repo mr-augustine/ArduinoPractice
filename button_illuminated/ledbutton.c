@@ -2,11 +2,11 @@
 #include "uwrite.h"
 #endif
 
-#include <stdio.h>
+#include <avr/io.h>
 #include "ledbutton.h"
 #include "pins.h"
 
-#define GET_CURRENT_STATE   (BUTTON_PINVEC & (1 << BUTTON_PIN))
+#define NEW_PIN_VALUE   ((BUTTON_PINVEC & (1 << BUTTON_PIN)) >> BUTTON_PIN)
 
 enum State {
   State_Unpressed = 0,
@@ -14,7 +14,7 @@ enum State {
 };
 
 static uint8_t button_enabled;
-static enum State button_state;
+static volatile enum State button_state;
 static uint8_t pin_value;
 
 // Sets up the button
@@ -32,7 +32,7 @@ void button_init(void) {
   // Initialize the button state as being not pressed regardless of its
   // current physical state.
   button_state = State_Unpressed;
-  pin_value = GET_CURRENT_STATE;
+  pin_value = NEW_PIN_VALUE;
 
   button_enabled = 1;
 
@@ -45,7 +45,8 @@ void button_update(void) {
     return;
   }
 
-  if (GET_CURRENT_STATE != pin_value) {
+  // Toggle states if the button's pin changed
+  if (NEW_PIN_VALUE != pin_value) {
 
     if (button_state == State_Unpressed) {
       button_state = State_Pressed;
@@ -77,7 +78,7 @@ void led_turn_off(void) {
     return;
   }
 
-  BUTTON_LED_PORT |= (0 << BUTTON_LED_PIN);
+  BUTTON_LED_PINVEC |= (0 << BUTTON_LED_PIN);
 
   return;
 }
@@ -87,7 +88,7 @@ void led_turn_on(void) {
     return;
   }
 
-  BUTTON_LED_PORT |= (1 << BUTTON_LED_PIN);
+  BUTTON_LED_PINVEC |= (1 << BUTTON_LED_PIN);
 
   return;
 }

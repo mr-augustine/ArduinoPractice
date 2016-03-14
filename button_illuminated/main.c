@@ -4,10 +4,20 @@
 
 int main(void) {
   button_init();
-  led_turn_on();
+
+  /*if (!button_is_pressed()) {
+    led_turn_on();
+  }*/
 
   while (1) {
+    button_update();
 
+    if (button_is_pressed()) {
+      led_turn_on();
+    } //else {
+    if (!button_is_pressed()) {
+      led_turn_off();
+    }
   }
 
   return 0;
