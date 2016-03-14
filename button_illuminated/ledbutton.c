@@ -13,8 +13,8 @@ enum State {
   State_Pressed
 };
 
-static button_enabled;
-static State button_state;
+static uint8_t button_enabled;
+static enum State button_state;
 static uint8_t pin_value;
 
 // Sets up the button

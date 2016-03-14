@@ -11,7 +11,7 @@ TARGET = main
 OBJ_DIR = obj
 
 OBJ = obj/main.o \
-      obj/pb_275_0009.o
+      obj/ledbutton.o
 
 CFLAGS = -std=gnu99 -Os -Werror \
 		 -mmcu=$(MCU) -DF_CPU=$(F_CPU) \
