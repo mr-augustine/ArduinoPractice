@@ -1,3 +1,9 @@
+/*
+ * file:    ledbutton.c
+ * author:  mr-augustine
+ * date:    20160313
+ *
+ */
 #ifdef DEBUG
 #include "uwrite.h"
 #endif
@@ -17,7 +23,7 @@ static uint8_t button_enabled;
 static volatile enum State button_state;
 static uint8_t pin_value;
 
-// Sets up the button
+// Sets up the button and its LED
 void button_init(void) {
   // Turn on the pullup resistors
   BUTTON_PORT |= (1 << BUTTON_PIN);
@@ -73,6 +79,7 @@ uint8_t button_is_pressed(void) {
   return 0;
 }
 
+// Turns the button's LED off
 void led_turn_off(void) {
   if (!button_enabled) {
     return;
@@ -83,6 +90,7 @@ void led_turn_off(void) {
   return;
 }
 
+// Turns the button's LED on
 void led_turn_on(void) {
   if (!button_enabled) {
     return;
