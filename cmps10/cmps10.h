@@ -6,6 +6,8 @@
 #define COMPASS_PITCH_REG 4
 #define COMPASS_ROLL_REG 5
 
+extern uint16_t cmps10_heading;
+
 void cmps10_init(void);
 void cmps10_update_heading(void);
 void cmps10_update_pitch(void);

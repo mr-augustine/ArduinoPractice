@@ -12,6 +12,7 @@ OBJ_DIR = obj
 
 OBJ = obj/main.o \
       obj/cmps10.o	\
+		  obj/uwrite.o
 
 CFLAGS = -std=gnu99 -Os -Werror \
 		 -mmcu=$(MCU) -DF_CPU=$(F_CPU) \
