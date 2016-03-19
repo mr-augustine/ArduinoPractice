@@ -18,15 +18,15 @@
 #define TW_START                   0x08 // Start condition transmitted
 #define TW_REP_START               0x10 // Repeated Start condition transmitted
 #define TW_MT_SLA_ACK              0x18 // SLA+W transmitted, ACK received
-#define TW_MT_SLA_NACK             0x20 // SLA+W transmitted, NACK received
+#define TW_MT_SLA_NACK             0x20
 #define TW_MT_DATA_ACK             0x28 // Data transmitted, ACK received
-#define TW_MT_DATA_NACK            0x30 // Data transmitted, NACK received
+#define TW_MT_DATA_NACK            0x30
 #define TW_MT_ARB_LOST             0x38
 #define TW_MR_ARB_LOST             0x38
-#define TW_MR_SLA_ACK              0x40
+#define TW_MR_SLA_ACK              0x40 // SLA+R transmitted, ACK received
 #define TW_MR_SLA_NACK             0x48
-#define TW_MR_DATA_ACK             0x50
-#define TW_MR_DATA_NACK            0x58
+#define TW_MR_DATA_ACK             0x50 // Data received, ACK returned
+#define TW_MR_DATA_NACK            0x58 // Data received, NACK returned
 #define TW_ST_SLA_ACK              0xA8
 #define TW_ST_ARB_LOST_SLA_ACK     0xB0
 #define TW_ST_DATA_ACK             0xB8

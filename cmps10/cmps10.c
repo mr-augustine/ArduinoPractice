@@ -23,13 +23,14 @@ static volatile uint8_t roll_ready = 0;
 static volatile uint8_t compass_active = 0;
 static volatile uint8_t compass_error = 0;
 
-static enum Cmps_Reg {
+enum Cmps_Reg {
   Register_Heading = 0,
   Register_Pitch,
   Register_Roll
 };
 
 static volatile uint8_t requested_register = Register_Heading;
+uint16_t cmps10_heading;
 
 ISR(TWI_vect) {
   uint8_t status = TW_STATUS;
@@ -130,6 +131,7 @@ ISR(TWI_vect) {
         break;
       } // switch (requested_register)
 
+      TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
       break;
     default:
       compass_error = 1;
@@ -198,6 +200,7 @@ void cmps10_update_heading(void) {
 
   if (heading_ready) {
     // TODO: Save the heading value to statevars
+    cmps10_heading = heading_reading;
   }
 
   if (compass_error) {
