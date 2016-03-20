@@ -1,7 +1,7 @@
 #include <avr/interrupt.h>
 #include "cmps10.h"
 #include "twi.h"
-
+#include "uwrite.h"
 
 /* We're using an unterminated do-while loop so that we can use a semicolon
  * when invoking the macro in our updated_xxx() functions. It's for the sake of
@@ -23,13 +23,17 @@ static volatile uint8_t roll_ready = 0;
 static volatile uint8_t compass_active = 0;
 static volatile uint8_t compass_error = 0;
 
-static enum Cmps_Reg {
-  Register_Heading = 0,
+enum Cmps_Reg {
+  Register_Heading_High = 0,
+  Register_Heading_Low,
   Register_Pitch,
   Register_Roll
 };
 
-static volatile uint8_t requested_register = Register_Heading;
+static volatile uint8_t requested_register = Register_Heading_High;
+uint16_t cmps10_heading;
+int8_t cmps10_pitch;
+int8_t cmps10_roll;
 
 ISR(TWI_vect) {
   uint8_t status = TW_STATUS;
@@ -42,24 +46,15 @@ ISR(TWI_vect) {
       break;
 
     /* Compass received the address; now send the register address for
-     * the value we're interested in [i.e., heading (2), pitch (4), roll (5)]
+     * the value we're interested in. Here we use the starting address
+     * COMPASS_HEADING_REG since it is the smallest of the four addresses
+     * and the compass will automatically increment to the next higher 
+     * addresses [i.e. heading MSB (2), heading LSB (3) , pitch (4), roll(5)]
      */
     case TW_MT_SLA_ACK:
-      switch (requested_register) {
-        case Register_Heading:
-          TWDR = COMPASS_HEADING_REG;
-          break;
-        case Register_Pitch:
-          TWDR = COMPASS_PITCH_REG;
-          break;
-        case Register_Roll:
-          TWDR = COMPASS_ROLL_REG;
-          break;
-        default:
-          break;
-      }
+      TWDR = COMPASS_HEADING_REG;
       TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE);
-      break; // switch (status)
+      break;
 
     /* Compass received the address of the register we want;
      * now send a repeated start
@@ -74,64 +69,96 @@ ISR(TWI_vect) {
       TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE);
       break;
 
-    // Compass acknowledged the read request; now send an acknowledgment
+    // Compass acknowledged the read request, it's ready to send; 
+    // AVR will send clock cycles to read the data from the
+    // compass into the data register then (1) send an acknowledgment
+    // to continue reading the available values, or (2) send no acknowledgement
+    // when we received the last value we wanted.
     case TW_MR_SLA_ACK:
-      TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA);
+      switch (requested_register) {
+        case Register_Heading_High:
+        //case Register_Heading_Low:
+        //case Register_Pitch:
+          TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA);
+          break;
+        case Register_Roll:
+          //TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE);
+          //break;
+        case Register_Heading_Low:
+        case Register_Pitch:
+        default:
+          UWRITE_print_buff("*******TW_MR_SLA_ACK Error *******\r\n");
+          return; 
+      }
       break;
 
-    // Read the high byte of the heading value; expect another byte to follow
+    // Compass sent data and AVR sent an ACK; read the next incoming byte
+    // from the data register and expect another byte to follow
     case TW_MR_DATA_ACK:
       switch (requested_register) {
-        case Register_Heading:
+        case Register_Heading_High:
           heading_reading = TWDR;
           heading_reading = heading_reading << 8;
-        break;
-        /* We should only have a heading requested. It's the only multi-byte
-         * value that we would request. The others should have a NACK after
-         * the first and only returned byte.
-         */
-        case Register_Pitch:
-        case Register_Roll:
-        default:
-        break;
-      }
-
-      TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE);
-      break;
-
-    /* Low byte of the heading received OR pitch received OR roll received;
-     * now read the data and send an acknowledgement
-     */
-    case TW_MR_DATA_NACK:
-      switch (requested_register) {
-        case Register_Heading:
+          requested_register = Register_Heading_Low;
+          break;
+        case Register_Heading_Low:
           heading_reading |= TWDR;
           heading_ready = 1;
-          compass_active = 0;
-        break;
-
+          requested_register = Register_Pitch;
+          break;
         case Register_Pitch:
           pitch_reading = TWDR;
           pitch_ready = 1;
+          requested_register = Register_Roll;
+          TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE);
+          return;
+        // This case should not occur because we expect the AVR to have sent
+        // a NACK after the roll value was received
+        case Register_Roll:
+          UWRITE_print_buff("***** Register Roll! *****\r\n");
+          break;
+        default:
+          UWRITE_print_buff("*********TW_MR_DATA_ACK ERROR********\r\n");
+          compass_error = 1;
+          heading_reading = 0xEEEE;   // 0xE is for error
+          pitch_reading = 0xBB;       // 0xB is for bad
+          roll_reading = 0xBB;
           compass_active = 0;
-        break;
+          TWCR = (1 << TWSTO) | (1 << TWEN);
+          return;
+      }
 
+      TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA); 
+      break;
+
+    /* Master received data and didn't send an ACK
+     * Roll received; now read the data and send a NACK
+     */
+    case TW_MR_DATA_NACK:
+      switch (requested_register) {
         case Register_Roll:
           roll_reading = TWDR;
           roll_ready = 1;
           compass_active = 0;
-        break;
-
+          break;
+        // These cases should not occur because we expect the AVR to have sent
+        // an ACK after these values were received
+        case Register_Heading_High:
+        case Register_Heading_Low:
+        case Register_Pitch:
         default:
+          UWRITE_print_buff("*********TW_MR_DATA_NACK ERROR********\r\n");
           compass_error = 1;
           heading_reading = 0xEEEE;   // 0xE is for error
           compass_active = 0;
           TWCR = (1 << TWSTO) | (1 << TWEN);
-        break;
-      } // switch (requested_register)
+          return;
+      }
 
+      TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
       break;
     default:
+      UWRITE_print_buff("*********SWITCH ERROR********\r\n");
       compass_error = 1;
       heading_reading = 0xEEEE;   // 0xE is for error
       pitch_reading = 0xBB;       // 0xB is for bad
@@ -191,58 +218,30 @@ void cmps10_init(void) {
   return;
 }
 
-void cmps10_update_heading(void) {
+/* Requests the heading, pitch, and roll measurements from the compass
+ */
+void cmps10_update_all(void) {
   if (compass_active) {
     return;
   }
 
   if (heading_ready) {
-    // TODO: Save the heading value to statevars
-  }
-
-  if (compass_error) {
-    // TODO: Save the error to statevars
-  }
-
-  requested_register = Register_Heading;
-  begin_new_reading();
-
-  return;
-}
-
-void cmps10_update_pitch(void) {
-  if (compass_active) {
-    return;
+    cmps10_heading = heading_reading;
   }
 
   if (pitch_ready) {
-    // TODO: Save the pitch value to statevars
-  }
-
-  if (compass_error) {
-    // TODO: Save the error to statevars
-  }
-
-  requested_register = Register_Pitch;
-  begin_new_reading();
-
-  return;
-}
-
-void cmps10_update_roll(void) {
-  if (compass_active) {
-    return;
+    cmps10_pitch = pitch_reading;
   }
 
   if (roll_ready) {
-    // TODO: Save the roll value to statevars
+    cmps10_roll = roll_reading;
   }
 
   if (compass_error) {
     // TODO: Save the error to statevars
   }
 
-  requested_register = Register_Roll;
+  requested_register = Register_Heading_High;
   begin_new_reading();
 
   return;
