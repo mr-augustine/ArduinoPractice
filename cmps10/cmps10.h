@@ -7,11 +7,11 @@
 #define COMPASS_ROLL_REG 5
 
 extern uint16_t cmps10_heading;
+extern int8_t cmps10_pitch;
+extern int8_t cmps10_roll;
 
 void cmps10_init(void);
-void cmps10_update_heading(void);
-void cmps10_update_pitch(void);
-void cmps10_update_roll(void);
+void cmps10_update_all(void);
 
 #endif /* _CMPS10_H_ */
 
