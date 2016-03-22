@@ -9,7 +9,7 @@
 #define _SD_CARD_H_
 
 #include <avr/io.h>
-#include "pin_defines.h"
+#include "pins.h"
 
 #define CHIP_SELECT 	(SPI_CS_PORT &= ~(1 << SPI_CS))
 #define CHIP_DESELECT	(SPI_CS_PORT |= (1 << SPI_CS))

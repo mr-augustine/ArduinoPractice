@@ -87,7 +87,7 @@ ISR(TWI_vect) {
         case Register_Heading_Low:
         case Register_Pitch:
         default:
-          UWRITE_print_buff("*******TW_MR_SLA_ACK Error *******\r\n");
+          uwrite_print_buff("*******TW_MR_SLA_ACK Error *******\r\n");
           return; 
       }
       break;
@@ -115,10 +115,10 @@ ISR(TWI_vect) {
         // This case should not occur because we expect the AVR to have sent
         // a NACK after the roll value was received
         case Register_Roll:
-          UWRITE_print_buff("***** Register Roll! *****\r\n");
+          uwrite_print_buff("***** Register Roll! *****\r\n");
           break;
         default:
-          UWRITE_print_buff("*********TW_MR_DATA_ACK ERROR********\r\n");
+          uwrite_print_buff("*********TW_MR_DATA_ACK ERROR********\r\n");
           compass_error = 1;
           heading_reading = 0xEEEE;   // 0xE is for error
           pitch_reading = 0xBB;       // 0xB is for bad
@@ -147,7 +147,7 @@ ISR(TWI_vect) {
         case Register_Heading_Low:
         case Register_Pitch:
         default:
-          UWRITE_print_buff("*********TW_MR_DATA_NACK ERROR********\r\n");
+          uwrite_print_buff("*********TW_MR_DATA_NACK ERROR********\r\n");
           compass_error = 1;
           heading_reading = 0xEEEE;   // 0xE is for error
           compass_active = 0;
@@ -158,7 +158,7 @@ ISR(TWI_vect) {
       TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
       break;
     default:
-      UWRITE_print_buff("*********SWITCH ERROR********\r\n");
+      uwrite_print_buff("*********SWITCH ERROR********\r\n");
       compass_error = 1;
       heading_reading = 0xEEEE;   // 0xE is for error
       pitch_reading = 0xBB;       // 0xB is for bad

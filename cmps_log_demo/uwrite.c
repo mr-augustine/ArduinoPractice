@@ -16,7 +16,7 @@
 static uint8_t uwrite_initialized;
 static char buffer[BUFF_SIZE];
 
-void UWRITE_init(void) {
+void uwrite_init(void) {
     // Disable interrupts before configuring USART
     cli();
 
@@ -47,7 +47,7 @@ void UWRITE_init(void) {
 }
 
 // Prints a null-terminated character buffer to the USART port
-void UWRITE_print_buff(char * character) {
+void uwrite_print_buff(char * character) {
     if (uwrite_initialized) {
 
         while (*character != 0) {
@@ -63,7 +63,7 @@ void UWRITE_print_buff(char * character) {
 }
 
 // Prints a byte to the USART port as a hex value
-void UWRITE_print_byte(void * a_byte) {
+void uwrite_print_byte(void * a_byte) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
@@ -81,7 +81,7 @@ void UWRITE_print_byte(void * a_byte) {
 }
 
 // Prints a short to the USART port as a hex value
-void UWRITE_print_short(void * a_short) {
+void uwrite_print_short(void * a_short) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
@@ -99,7 +99,7 @@ void UWRITE_print_short(void * a_short) {
 }
 
 // Prints a long to the USART port as a hex value
-void UWRITE_print_long(void * a_long) {
+void uwrite_print_long(void * a_long) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
