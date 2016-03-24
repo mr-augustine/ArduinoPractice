@@ -1,3 +1,10 @@
+/*
+ * file: main.c
+ * author: mr-augustine
+ * date: 20160301
+ *
+ * Exercises the uwrite library by printing several test values
+ */
 #include <stdio.h>
 #include "uwrite.h"
 
