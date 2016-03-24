@@ -4,33 +4,50 @@
 
 #include "uwrite.h"
 
-#define RCIE0   7
-#define RXEN0   4
-#define TXEN0   3
-#define UCSZ01  2
-#define UCSZ00  1
-#define UDRE0   5
+// Including <avr/io.h> means you don't have to define these bits
+// UCSR0A Bits
+//#define UDRE0   5
+// UCSR0B Bits
+//#define RXCIE0  7
+//#define RXEN0   4
+//#define TXEN0   3
+// UCSR0C Bits
+//#define UCSZ01  2
+//#define UCSZ00  1
 
 #define TX_REG_NOT_READY() (!(UCSR0A & (1 << UDRE0)))
 
 static uint8_t uwrite_initialized;
 static char buffer[BUFF_SIZE];
 
-void UWRITE_init(void) {
+// TODO: Verify that the registers are set the way you expect them to be
+// in case some other library decides to change them.
+void uwrite_init(void) {
     // Disable interrupts before configuring USART
     cli();
 
     // Unset the flags, double speed, and comm mode bits
-    UCSR0A = 0;
+    // Zeroizing the register will unset UDRE0 (bit 5) which would have
+    // indicated that the Transmitter is ready. I don't see the advantage
+    // of unsetting UDRE0 during initialization.
+    //UCSR0A = 0;
 
     // Enable receive interrupt, receiving and transmission
-    UCSR0B = 0;
-    UCSR0B = (1 << RCIE0) | (1 << RXEN0) | (1 << TXEN0);
+    // USCR0B is initially all zeroes. No need to zeroize.
+    //UCSR0B = 0;
+    // Doesn't make sense to set RXCIE0 if we aren't setting RXC0 in UCSR0A
+    // We are't using a recieve interrupt service routine
+    //UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
+    // Do we really need to enable receiving on the USART? We're only
+    // transmitting bits; not receiving them.
+    //UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+    UCSR0B = (1 << TXEN0);
 
     // Enable 8-bit character size
     // Asynchronous USART, no partity, 1 stop bit already set (default)
-    UCSR0C = 0;
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+    // The UCSZ01 and UCSZ00 bit are set by default
+    //UCSR0C = 0;
+    //UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 
     // Set baud rate to 115200
     // f_osc / (UBRRn + 1) == 115200
@@ -47,7 +64,7 @@ void UWRITE_init(void) {
 }
 
 // Prints a null-terminated character buffer to the USART port
-void UWRITE_print_buff(char * character) {
+void uwrite_print_buff(char * character) {
     if (uwrite_initialized) {
 
         while (*character != 0) {
@@ -63,7 +80,7 @@ void UWRITE_print_buff(char * character) {
 }
 
 // Prints a byte to the USART port as a hex value
-void UWRITE_print_byte(void * a_byte) {
+void uwrite_print_byte(void * a_byte) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
@@ -81,7 +98,7 @@ void UWRITE_print_byte(void * a_byte) {
 }
 
 // Prints a short to the USART port as a hex value
-void UWRITE_print_short(void * a_short) {
+void uwrite_print_short(void * a_short) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
@@ -99,7 +116,7 @@ void UWRITE_print_short(void * a_short) {
 }
 
 // Prints a long to the USART port as a hex value
-void UWRITE_print_long(void * a_long) {
+void uwrite_print_long(void * a_long) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
