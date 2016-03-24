@@ -1,6 +1,7 @@
 /*
  * File: sd_card.c
  */
+#include <avr/interrupt.h>
 #include <stdio.h>
 #include "sd_card.h"
 #include "statevars.h"
@@ -18,6 +19,8 @@ uint32_t SDCARD_next_block;
 uint32_t SDCARD_num_blocks;
 
 void spi_init(void) {
+  cli();
+
   SPI_CS_DDR |= (1 << SPI_CS); // set chip select pin as an output
   CHIP_DESELECT; // start the card as not being selected
 
@@ -35,6 +38,8 @@ void spi_init(void) {
   SPCR |= (1 << SPR1) + (1 << SPR0);// set clock rate to f_osc / 128
   SPCR |= (1 << MSTR);              // set Arduino as master device
   SPCR |= (1 << SPE);               // enable SPI operations
+
+  sei();
 }
 
 void sdcard_init(void) {

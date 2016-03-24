@@ -52,7 +52,7 @@ reset:
 		stty -F $(ARD_PORT) -hupcl
 
 upload: obj/main.hex reset
-	avrdude -q -V -p $(MCU) \
+	avrdude -p $(MCU) \
 			-C /etc/avrdude.conf \
 			-c arduino \
 			-b 115200 \
