@@ -1,6 +1,3 @@
-/*
- *
- */
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <stdio.h>
@@ -12,24 +9,20 @@
 static uint8_t uwrite_initialized;
 static char buffer[BUFF_SIZE];
 
-/*
- * Initializes the USART port for writing.
+// TODO: Verify that the registers are set the way you expect them to be
+// in case some other library decides to change them.
+/* Configures the hardware to enable USART transmission and a baud rate
+ * of 115200 bps
  */
 void uwrite_init(void) {
     // Disable interrupts before configuring USART
     cli();
 
-    // Unset the flags, double speed, and comm mode bits
-    UCSR0A = 0;
+    // Enable transmitting
+    UCSR0B = (1 << TXEN0);
 
-    // Enable receive interrupt, receiving and transmission
-    UCSR0B = 0;
-    UCSR0B = (1 << RCIE0) | (1 << RXEN0) | (1 << TXEN0);
-
-    // Enable 8-bit character size
-    // Asynchronous USART, no partity, 1 stop bit already set (default)
-    UCSR0C = 0;
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+    // 8-bit character size, asynchronous USART, no partity,
+    // 1 stop bit already set by default in UCSR0C
 
     // Set baud rate to 115200
     // f_osc / (UBRRn + 1) == 115200
@@ -51,7 +44,7 @@ void uwrite_init(void) {
  *
  * char_buff: a null-terminated character buffer
  */
-void uwrite_print_buff(const char * char_buff) {
+void uwrite_print_buff(char * char_buff) {
     if (uwrite_initialized) {
 
         while (*char_buff != 0) {
@@ -72,11 +65,11 @@ void uwrite_print_buff(const char * char_buff) {
  *
  * a_byte: a pointer to a byte value
  */
-void uwrite_print_byte(const void * a_byte) {
+void uwrite_print_byte(void * a_byte) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
-        snprintf(buffer, BUFF_SIZE, "0x%02X\r\n", *((uint8_t *) a_byte));
+        snprintf(buffer, BUFF_SIZE, "0x%02X\r\n", *((char *) a_byte));
         
         while (*char_ptr != 0) {
             while TX_REG_NOT_READY() {;}
@@ -95,7 +88,7 @@ void uwrite_print_byte(const void * a_byte) {
  *
  * a_short: a pointer to a short value
  */
-void uwrite_print_short(const void * a_short) {
+void uwrite_print_short(void * a_short) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
@@ -118,11 +111,11 @@ void uwrite_print_short(const void * a_short) {
  *
  * a_long: a pointer to a long value
  */
-void uwrite_print_long(const void * a_long) {
+void uwrite_print_long(void * a_long) {
     if (uwrite_initialized) {
         char * char_ptr = buffer;
 
-        snprintf(buffer, BUFF_SIZE, "0x%08lX\r\n", *((uint32_t *) a_long));
+        snprintf(buffer, BUFF_SIZE, "0x%02lX\r\n", *((uint32_t *) a_long));
 
         while (*char_ptr != 0) {
             while TX_REG_NOT_READY() {;}
@@ -134,4 +127,3 @@ void uwrite_print_long(const void * a_long) {
 
     return;
 }
-
