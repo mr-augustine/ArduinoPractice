@@ -11,6 +11,7 @@
 #include <avr/io.h>
 #include "ledbutton.h"
 #include "pins.h"
+#include "statevars.h"
 
 #define NEW_PIN_VALUE   ((BUTTON_PINVEC & (1 << BUTTON_PIN)) >> BUTTON_PIN)
 
@@ -56,8 +57,10 @@ void button_update(void) {
 
     if (button_state == State_Unpressed) {
       button_state = State_Pressed;
+      statevars.mission_started = 1;
     } else {
       button_state = State_Unpressed;
+      statevars.mission_started = 0;
     }
 
     pin_value = !pin_value;

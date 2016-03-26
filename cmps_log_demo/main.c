@@ -17,29 +17,38 @@ statevars_t statevars;
 
 int main(void) {
   uwrite_init(); 
-  /*button_init();
+  button_init();
   spi_init();
   sdcard_init();
-  cmps10_init();*/
+  cmps10_init();
 
   memset(&statevars, 0, sizeof(statevars));
+  statevars.prefix = 0xDADAFEED;
+  statevars.suffix = 0xCAFEBABE;
 
-  char msg[32];
+  /*char msg[32];
   memset(msg, 0, sizeof(msg));
   snprintf(msg, sizeof(msg),
     "sizeof(statevars): %d\r\n", sizeof(statevars));
-  //uwrite_print_buff(msg);
+  uwrite_print_buff(msg);*/
 
-  spi_init();
+  uint32_t iterations = 0;
 
-  //uwrite_print_buff("Printing before sdcard init!\r\n");
+  while (1) {
+    button_update();
+    cmps10_update_all();
+    statevars.main_loop_counter = iterations;
 
-  
-  sdcard_init();
+    sdcard_write_data();
 
-  /*if (sdcard_is_enabled()) {
-    uwrite_print_buff("Tada!\r\n");
-  }*/
+    iterations++;
+
+    if (iterations > 64) {
+      break;
+    }
+  }
+
+  led_turn_off();
 
   return 0;
 }
