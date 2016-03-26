@@ -26,13 +26,9 @@ int main(void) {
   statevars.prefix = 0xDADAFEED;
   statevars.suffix = 0xCAFEBABE;
 
-  /*char msg[32];
-  memset(msg, 0, sizeof(msg));
-  snprintf(msg, sizeof(msg),
-    "sizeof(statevars): %d\r\n", sizeof(statevars));
-  uwrite_print_buff(msg);*/
-
   uint32_t iterations = 0;
+
+  uwrite_print_buff(msg);
 
   while (1) {
     button_update();
@@ -49,7 +45,7 @@ int main(void) {
   }
 
   led_turn_off();
-
+  
   return 0;
 }
 
