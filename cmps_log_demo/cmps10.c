@@ -1,5 +1,6 @@
 #include <avr/interrupt.h>
 #include "cmps10.h"
+#include "statevars.h"
 #include "twi.h"
 #include "uwrite.h"
 
@@ -227,14 +228,18 @@ void cmps10_update_all(void) {
 
   if (heading_ready) {
     cmps10_heading = heading_reading;
+    statevars.heading_raw = heading_reading;
+    statevars.heading_deg = heading_reading / 10.0;
   }
 
   if (pitch_ready) {
     cmps10_pitch = pitch_reading;
+    statevars.pitch_deg = pitch_reading;
   }
 
   if (roll_ready) {
     cmps10_roll = roll_reading;
+    statevars.roll_deg = roll_reading;
   }
 
   if (compass_error) {

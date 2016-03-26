@@ -7,11 +7,12 @@
 typedef struct {
     uint32_t prefix;
     uint32_t main_loop_counter;
+    uint8_t  mission_started;
     uint16_t heading_raw;
     float    heading_deg;
     uint8_t  pitch_deg;
     uint8_t  roll_deg;
-    char     padding[492];        // 512 bytes - sizeof(other struct bytes)
+    char     padding[491];        // 512 bytes - sizeof(other struct bytes)
     uint32_t suffix;
 } statevars_t;
 

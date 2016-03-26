@@ -257,8 +257,8 @@ static int8_t sdcard_check_block(uint32_t block_address) {
   }
 
   //----- DEBUG
-  uwrite_print_buff("Final ignored byte: ");
-  uwrite_print_byte(&ignore_index);
+  //uwrite_print_buff("Final ignored byte: ");
+  //uwrite_print_byte(&ignore_index);
   //----- DEBUG
 
   PORTD |= (1 << 4);
@@ -269,6 +269,7 @@ static int8_t sdcard_check_block(uint32_t block_address) {
   // Hardcoding the frame prefix for now
   // TODO: Have this reference a #defined value
   if (block_data.dword == 0xDADAFEED) {
+    uwrite_print_buff("Prefix found!\r\n");
     return 1;
   }
 
@@ -622,11 +623,13 @@ void sdcard_write_data(void) {
     return;
   }
 
-  SDCARD_next_block = SDCARD_next_block + 1;
   spi_exchange_byte(0xFE);
 
   //----- DEBUG
-  uwrite_print_buff("Writing data... \r\n");
+  char msg[32];
+  uwrite_print_buff("Writing data... ");
+  snprintf(msg, sizeof(msg), " to block %u\r\n", (unsigned int)SDCARD_next_block);
+  uwrite_print_buff(msg);
   //----- DEBUG
   // Write the robot's data
   uint16_t byte_index;
@@ -649,6 +652,8 @@ void sdcard_write_data(void) {
     SDCARD_enabled = 0;
     return;
   }  
+
+  SDCARD_next_block = SDCARD_next_block + 1;
 
   //----- DEBUG
   uwrite_print_buff("Done!\r\n");

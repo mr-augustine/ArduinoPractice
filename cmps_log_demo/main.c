@@ -23,24 +23,29 @@ int main(void) {
   cmps10_init();
 
   memset(&statevars, 0, sizeof(statevars));
+  statevars.prefix = 0xDADAFEED;
+  statevars.suffix = 0xCAFEBABE;
 
-  char msg[32];
-  memset(msg, 0, sizeof(msg));
-  snprintf(msg, sizeof(msg),
-    "sizeof(statevars): %d\r\n", sizeof(statevars));
+  uint32_t iterations = 0;
+
   uwrite_print_buff(msg);
 
-  //spi_init();
+  while (1) {
+    button_update();
+    cmps10_update_all();
+    statevars.main_loop_counter = iterations;
 
-  //uwrite_print_buff("Printing before sdcard init!\r\n");
+    sdcard_write_data();
 
-  
-  //sdcard_init();
+    iterations++;
 
-  if (sdcard_is_enabled()) {
-    uwrite_print_buff("Tada!\r\n");
+    if (iterations > 64) {
+      break;
+    }
   }
 
+  led_turn_off();
+  
   return 0;
 }
 
