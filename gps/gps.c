@@ -87,6 +87,7 @@ void gps_init(void) {
   UCSR0A = 0;
 
   // Enable receive interrupt, receiving and trasmission
+  // TODO: Do we really need the ability to transmit?
   UCSR0B = 0;
   UCSR0B = (1 << RCIE0) | (1 << RXEN0) | (1 << TXEN0);
 
@@ -110,28 +111,81 @@ void gps_init(void) {
 void gps_update(void) {
 
   // TODO: memset the statevars that will hold the sentences
+  uint8_t buffer_index;
+  for (buffer_index = 0; buffer_index < NUM_GPS_SENTENCE_BUFFS; buffer_index++) {
+    memset(gps_buffers[buffer_index], 0, sizeof(gps_buffer_t));
+  }
 
   // TODO: initialize gps statevars to zero
+  initialize_gps_statevars();
 
   if (gps_no_avail_buff == 1) {
-    // TODO: update statevars
+    // TODO: update statevars bitvector
     gps_no_avail_buff = 0;
   }
 
   if (gps_buff_overflow == 1) {
-    // TODO: update statevars
+    // TODO: update statevars bitvector
     gps_buff_overflow = 0;
   }
 
   if (gps_unexpected_start == 1) {
-    // TODO: update statevars
+    // TODO: update statevars bitvector
     gps_unexpected_start = 0;
   }
 
   if (gps_buffers[0].ready == 1) {
-
+    memcpy(statevars.gps_sentence0, gps_buffers[0], GPS_SENTENCE_BUFF_SZ); 
+    parse_gps_sentence(statevars.gps_sentence0);
+    gps_buffers[0].ready = 0;
   }
 
+  if (gps_buffers[1].ready == 1) {
+    memcpy(statevars.gps_sentence1, gps_buffers[1], GPS_SENTENCE_BUFF_SZ); 
+    parse_gps_sentence(statevars.gps_sentence1);
+    gps_buffers[1].ready = 0;
+  }
+
+  if (gps_buffers[2].ready == 1) {
+    memcpy(statevars.gps_sentence2, gps_buffers[2], GPS_SENTENCE_BUFF_SZ); 
+    parse_gps_sentence(statevars.gps_sentence2);
+    gps_buffers[2].ready = 0;
+  }
+
+  if (gps_buffers[3].ready == 1) {
+    memcpy(statevars.gps_sentence3, gps_buffers[3], GPS_SENTENCE_BUFF_SZ); 
+    parse_gps_sentence(statevars.gps_sentence3);
+    gps_buffers[3].ready = 0;
+  }
+
+  return;
 }
 
+static void initialize_gps_statevars() {
+  statevars.gps_latitude = 0.0;
+  statevars.gps_longitude = 0.0;
+  statevars.gps_hdop = 0.0;
+  statevars.gps_altitude_m = 0.0;
+  statevars.gps_mag_hdg_deg = 0.0;
+  statevars.gps_speed_kmph = 0.0;
+  memset(statevars.date, 0, GPS_DATE_WIDTH);
+  memset(statevars.time, 0, GPS_TIME_WIDTH);
+
+  return;
+}
+
+static void parse_gps_sentence(char * sentence) {
+  if (strncmp(sentence, GPGGA_START, START_LENGTH) == 0) {
+
+  } else if (strncmp(sentence, GPVTG_START, START_LENGTH) == 0) {
+
+  } else if (strncmp(sentence, GPRMC_START, START_LENGTH) == 0) {
+
+  } else {
+    // We don't care about the GPGSA sentence
+    return;
+  } 
+
+  return;
+}
 
