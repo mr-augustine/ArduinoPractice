@@ -113,7 +113,7 @@ void gps_update(void) {
   // TODO: memset the statevars that will hold the sentences
   uint8_t buffer_index;
   for (buffer_index = 0; buffer_index < NUM_GPS_SENTENCE_BUFFS; buffer_index++) {
-    memset(gps_buffers[buffer_index], 0, sizeof(gps_buffer_t));
+    memset(gps_buffers[buffer_index], '\0', sizeof(gps_buffer_t));
   }
 
   // TODO: initialize gps statevars to zero
@@ -174,8 +174,78 @@ static void initialize_gps_statevars() {
   return;
 }
 
+static void parse_gpgga(char * s) {
+  char field_buf[8];
+  memset(field_buf, '\0', 8);
+
+  // $GPGGA header - ignore
+  s = strtok(s, ",.");
+
+  // UTC Time
+  s = strtok(NULL, ",.");
+  strncpy(field_buf, s, 2);
+  gps_hours = atoi(field_buf);
+  strncpy(field_buf, s+2, 2);
+  gps_minutes = atoi(field_buf);
+  strncpy(field_buf, s+4, 6);
+  gps_seconds = atof(field_buf);
+}
+
 static void parse_gps_sentence(char * sentence) {
+  char * cursor = sentence;
+
   if (strncmp(sentence, GPGGA_START, START_LENGTH) == 0) {
+    parse_gpgga(char * sentence);
+    // TODO: verify checksum
+
+    // Time: hhmmss.sss
+    cursor = strchr(cursor, ',') + 1;
+
+    // Latitude: ddmm.mmmm
+    uint8_t field_index;
+    char degrees[LAT_LONG_FIELD_LENGTH];
+    memset(degrees, '\0', LAT_LONG_FIELD_LENGTH);
+    cursor = strchr(cursor, ',') + 1;
+
+    for (field_index = 0; field_index < LAT_LONG_FIELD_LENGTH; field_index++) {
+      if (cursor[field_index + 2] == '.') {
+        break;
+      }
+
+      degrees[field_index] = cursor[field_index];
+    }
+    
+    float longitude_deg = atoi(degrees);
+    cursor += field_index;
+    float longitude_min = atof(cursor);
+
+    // Latitude hemisphere
+    cursor = strchr(cursor, ',') + 1;
+    uint8_t west = 0;
+    if (*cursor == 'W') {
+      west = 1;
+    } else if (*string = 'E') {
+      west = 0;
+    } else {
+      return;
+    }
+
+    // Longitude: LLll.llll
+    cursor = strchr(cursor, ',') + 1;
+
+    // Longitude hemisphere
+    cursor = strchr(cursor, ',') + 1;
+
+    // Position Indicator
+    cursor = strchr(cursor, ',') + 1;
+    // Num satellites used
+    cursor = strchr(cursor, ',') + 1;
+
+    // Horizontal Dilution of Precision (HDOP)
+    cursor = strchr(cursor, ',') + 1;
+
+    // Mean Sea Level Altitude
+    cursor = strchr(cursor, ',') + 1;
 
   } else if (strncmp(sentence, GPVTG_START, START_LENGTH) == 0) {
 
