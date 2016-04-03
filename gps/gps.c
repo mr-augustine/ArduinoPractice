@@ -101,10 +101,8 @@ void gps_init(void) {
   UCSR0A = 0;
 
   // Enable receive interrupt, receiving and trasmission
-  // TODO: Do we really need the ability to transmit?
   UCSR0B = 0;
-  UCSR0B = (1 << RXCIE0) | (1 << RXEN0);
-  //UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
+  UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
 
   // Enable 8-bit character size
   // Asynchronous USART, no parity, 1 stop bit already set (default)

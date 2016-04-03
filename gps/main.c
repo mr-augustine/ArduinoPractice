@@ -14,6 +14,8 @@ int main(void) {
   uwrite_init();
   gps_init();
 
+  uwrite_print_buff("Here\r\n");
+
   while (1) {
     statevars.status = 0;
 
