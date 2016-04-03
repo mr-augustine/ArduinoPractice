@@ -10,6 +10,8 @@ statevars_t statevars;
 int main(void) {
   memset(&statevars, 0, sizeof(statevars));
 
+  gps_init();
+
   return;
 }
 
