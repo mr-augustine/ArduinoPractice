@@ -3,15 +3,26 @@
  */
 #include <stdio.h>
 
+#include "gps.h"
 #include "statevars.h"
+#include "uwrite.h"
 
 statevars_t statevars;
 
 int main(void) {
-  memset(&statevars, 0, sizeof(statevars));
 
+  uwrite_init();
   gps_init();
 
-  return;
+  while (1) {
+    statevars.status = 0;
+
+    gps_update();
+
+    uwrite_print_buff("statevars.status: ");
+    uwrite_print_long(&statevars.status);
+  }
+
+  return 0;
 }
 
