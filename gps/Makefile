@@ -4,7 +4,7 @@
 F_CPU = 16000000L
 MCU = atmega328p
 
-ARD_PORT = /dev/ttyACM0
+ARD_PORT = /dev/ttyACM1
 
 TARGET = main
 
@@ -12,7 +12,7 @@ OBJ_DIR = obj
 
 OBJ = obj/main.o \
       obj/gps.o \
-      obj/uwrite.o \
+      obj/uwrite.o
 
 CFLAGS = -std=gnu99 -Os -Werror \
 		 -mmcu=$(MCU) -DF_CPU=$(F_CPU) \

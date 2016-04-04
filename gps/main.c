@@ -5,24 +5,26 @@
 
 #include "gps.h"
 #include "statevars.h"
-#include "uwrite.h"
+//#include "uwrite.h"
 
 statevars_t statevars;
 
 int main(void) {
 
-  uwrite_init();
+  //uwrite_init();
   gps_init();
 
-  uwrite_print_buff("Here\r\n");
+  // It looks like the uwrite and gps libraries cannot play
+  // nicely together on the same USART port. Switch to the Mega.
+  //uwrite_print_buff("Here\r\n");
 
   while (1) {
-    statevars.status = 0;
+    //statevars.status = 0;
 
-    gps_update();
+    //gps_update();
 
-    uwrite_print_buff("statevars.status: ");
-    uwrite_print_long(&statevars.status);
+    //uwrite_print_buff("statevars.status: ");
+    //uwrite_print_long(&statevars.status);
   }
 
   return 0;

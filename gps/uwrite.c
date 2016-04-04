@@ -27,8 +27,12 @@ void uwrite_init(void) {
     // Set baud rate to 115200
     // f_osc / (UBRRn + 1) == 115200
     // See Table 20.7 in the Atmel specs
-    UBRR0H = 0;
-    UBRR0L = 8;
+    // NOTE: Resetting the baud rate registers after they've already been
+    // set is bad news. According to Section 20.11.5 in the Atmel specs
+    // "Ongoing transmissions by the Transmitter and Receiver will be 
+    // corrupted if the baud rate is changed."
+    //UBRR0H = 0;
+    //UBRR0L = 8;
 
     // Re-enable interrupts after USART configuration is complete
     sei();

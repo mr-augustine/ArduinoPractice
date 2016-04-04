@@ -98,11 +98,11 @@ void gps_init(void) {
   cli();
 
   // Unset the flags, double speed, and comm mode bits
-  UCSR0A = 0;
+  //UCSR0A = 0;
 
   // Enable receive interrupt, receiving and trasmission
   UCSR0B = 0;
-  UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
+  UCSR0B = (1 << RXCIE0) | (1 << RXEN0);
 
   // Enable 8-bit character size
   // Asynchronous USART, no parity, 1 stop bit already set (default)
@@ -113,7 +113,8 @@ void gps_init(void) {
   // f_osc / (UBRRn + 1) == 115200
   // See Table 20.7 in the Atmel specs
   UBRR0H = 0;
-  UBRR0L = 8;
+  //UBRR0L = 8;
+  UBRR0L = 103; // BAUD == 9600
 
   // Re-enable interrupts after USART configuration is complete
   sei();
