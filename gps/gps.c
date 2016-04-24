@@ -201,7 +201,11 @@ static void initialize_gps_statevars() {
 }
 
 /* Parses the specified GPGGA sentence and saves the values of interest
- * to the statevars variable
+ * to the statevars variable.
+ *
+ * Note: The current implementation is destructive because it uses strtok()
+ * to tokenize the sentence. The ',' delimeters will be overwritten with
+ * null chars.
  *
  * Returns 0 if successful; 1 otherwise
  */
@@ -283,7 +287,7 @@ static uint8_t parse_gpgga(char * s) {
   // Position (Fix) Indicator
   s = strtok(NULL, ",");
   // If there is no fix
-  if (*s == '0') {
+  if (*s == GPS_NO_FIX) {
     return 1;
   }
 
@@ -307,9 +311,14 @@ static uint8_t parse_gpgga(char * s) {
  */
 static void parse_gps_sentence(char * sentence) {
   if (strncmp(sentence, GPGGA_START, START_LENGTH) == 0) {
+    // Copy the GPGGA sentence to statevars regardless of checksum; and
+    // include any null chars as well (versus strcpy)
+    memcpy(statevars.gps_sentence0, sentence, GPS_SENTENCE_BUFF_SZ);
+
     // Parse the sentence only if the checksum is valid
     if (validate_checksum(sentence) == 1) {
       parse_gpgga(sentence);
+      // TODO: Consider changing the macro to STATUS_GPS_VALID_GPGGA_RCVD
       statevars.status |= STATUS_GPS_GPGGA_RCVD;
     }
   } else if (strncmp(sentence, GPVTG_START, START_LENGTH) == 0) {
@@ -360,7 +369,7 @@ static uint8_t validate_checksum(char * s) {
 
   // Verify that there was no overflow by checking whether the cursor
   // went beyond the buffer limit, possibly due to not finding a '*'
-  if (s_cursor + 2 >= GPS_SENTENCE_BUFF_SZ) {
+  if (s_cursor + GPS_CHECKSUM_LENGTH >= GPS_SENTENCE_BUFF_SZ) {
     return 0;
   }
 
