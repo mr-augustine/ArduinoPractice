@@ -14,6 +14,14 @@
 #include <avr/io.h>                 // For the pin names (e.g., PB2)
 
 ////////////////////////////////////////////////////////////////////////////////
+// COMPASS (CMPS10)
+#define COMPASS_PORT        PORTD
+#define COMPASS_DDR         DDRD
+#define COMPASS_PINVEC      PIND
+#define COMPASS_SDA_PIN     PD1     // Mega Digital Pin 20
+#define COMPASS_SCL_PIN     PD0     // Mega Digital Pin 21
+
+////////////////////////////////////////////////////////////////////////////////
 // ILLUMINATED PUSHBUTTON
 #define BUTTON_PORT         PORTF
 #define BUTTON_DDR          DDRF

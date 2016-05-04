@@ -9,6 +9,7 @@ TARGET = main
 OBJ_DIR = obj
 
 OBJ = obj/main.o \
+		obj/cmps10.o \
 		obj/ledbutton.o \
 		obj/uwrite.o
 
