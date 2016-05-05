@@ -2,7 +2,7 @@
 F_CPU = 16000000L
 MCU = atmega2560
 
-ARD_PORT = /dev/ttyACM0
+ARD_PORT = /dev/ttyACM1
 
 TARGET = main
 
@@ -11,6 +11,7 @@ OBJ_DIR = obj
 OBJ = obj/main.o \
 		obj/cmps10.o \
 		obj/ledbutton.o \
+		obj/sd_card.o \
 		obj/uwrite.o
 
 CFLAGS = -std=gnu99 -Os -Werror \
