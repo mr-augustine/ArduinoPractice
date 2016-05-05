@@ -32,9 +32,9 @@ int main(void) {
   statevars.prefix = 0xDADAFEED;
   statevars.suffix = 0xCAFEBABE;
 
-  //uint32_t iterations = 0;
+  uint32_t iterations = 0;
 
-  /*while (1) {
+  while (1) {
     button_update();
     cmps10_update_all();
     statevars.main_loop_counter = iterations;
@@ -63,7 +63,7 @@ int main(void) {
       uwrite_print_buff("Finished collecting data!\r\n");
       break;
     }
-  }*/
+  }
 
   return 0;
 }
