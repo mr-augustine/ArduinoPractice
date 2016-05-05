@@ -34,6 +34,28 @@
 #define BUTTON_LED_PIN      PH6     // Mega Digital Pin 9
 
 ////////////////////////////////////////////////////////////////////////////////
+// SD Card
+#define SPI_CS_PORT         PORTB
+#define SPI_CS_DDR          DDRB
+#define SPI_CS_PIN          PINB
+#define SPI_CS              PB0    // Mega Digital Pin 53
+
+#define SPI_MOSI_PORT       PORTB
+#define SPI_MOSI_DDR        DDRB
+#define SPI_MOSI_PIN        PINB
+#define SPI_MOSI            PB2    // Mega Digital Pin 51
+
+#define SPI_MISO_PORT       PORTB
+#define SPI_MISO_DDR        DDRB
+#define SPI_MISO_PIN        PINB
+#define SPI_MISO            PB3    // Mega Digital Pin 50
+
+#define SPI_SCK_PORT        PORTB
+#define SPI_SCK_DDR         DDRB
+#define SPI_SCK_PIN         PINB
+#define SPI_SCK             PB1    // Mega Digital Pin 52
+
+////////////////////////////////////////////////////////////////////////////////
 // USART WRITE
 // Keep these pins unoccupied       // Mega Digital Pin 0
                                     // Mega Digital Pin 1
