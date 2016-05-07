@@ -85,7 +85,8 @@ void led_turn_off(void) {
     return;
   }
 
-  BUTTON_LED_PINVEC |= (0 << BUTTON_LED_PIN);
+  //BUTTON_LED_PINVEC |= (0 << BUTTON_LED_PIN);
+  BUTTON_LED_PORT &= (0 << BUTTON_LED_PIN);
 
   return;
 }
@@ -96,7 +97,8 @@ void led_turn_on(void) {
     return;
   }
 
-  BUTTON_LED_PINVEC |= (1 << BUTTON_LED_PIN);
+  //BUTTON_LED_PINVEC |= (1 << BUTTON_LED_PIN);
+  BUTTON_LED_PORT |= (1 << BUTTON_LED_PIN);
 
   return;
 }

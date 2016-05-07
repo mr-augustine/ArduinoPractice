@@ -59,10 +59,11 @@ int main(void) {
 
     iterations++;
 
-    if (iterations > 2048) {
+    /*if (iterations > 2048) {
       uwrite_print_buff("Finished collecting data!\r\n");
       break;
-    }
+    }*/
+
   }
 
   return 0;
