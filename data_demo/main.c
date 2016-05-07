@@ -19,6 +19,9 @@
 statevars_t statevars;
 
 int main(void) {
+  // TIMING DEBUG - Digital Pin 4
+  DDRG |= (1 << 5);
+
   char msg[64];
 
   //TODO: Verify that all init functions were successful before proceeding
@@ -35,9 +38,15 @@ int main(void) {
   uint32_t iterations = 0;
 
   while (1) {
+    // TIMING DEBUG
+    PORTG |= (1 << 5);
+
     button_update();
     cmps10_update_all();
     statevars.main_loop_counter = iterations;
+
+    // TIMING DEBUG
+    PORTG &= (0 << 5);
 
     if (button_is_pressed()) {
       uwrite_print_buff("The button is pressed! The LED should be on.\r\n");

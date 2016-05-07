@@ -85,6 +85,8 @@ void led_turn_off(void) {
     return;
   }
 
+  // I'm not sure why OR'ing with a '0' actually worked. But we're replacing
+  // the confusing syntax.
   //BUTTON_LED_PINVEC |= (0 << BUTTON_LED_PIN);
   BUTTON_LED_PORT &= (0 << BUTTON_LED_PIN);
 
@@ -97,6 +99,10 @@ void led_turn_on(void) {
     return;
   }
 
+  // According to the note Atmel datasheet Section 14.2.2, writing a one to the
+  // pin register provides toggles the value of PORTxn. But that syntax is
+  // confusing. We should opt for writing a '1' to turn ON and writing a '0'
+  // to turn OFF.
   //BUTTON_LED_PINVEC |= (1 << BUTTON_LED_PIN);
   BUTTON_LED_PORT |= (1 << BUTTON_LED_PIN);
 
