@@ -153,8 +153,13 @@ uint8_t sdcard_init(void) {
     return 0;
 
   // Increase SPI clock to 2 MHz
+  //SPSR |= (1 << SPI2X);
+  //SPCR &= ~(1 << SPR1);
+
+  // Increase SPI clock to 8 MHz
   SPSR |= (1 << SPI2X);
   SPCR &= ~(1 << SPR1);
+  SPCR &= ~(1 << SPR0);
 
   // Read the card size
   if (!sdcard_read_card_size()) {

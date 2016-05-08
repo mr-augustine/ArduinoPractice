@@ -62,10 +62,10 @@ int main(void) {
       cmps10_init() &&
       sdcard_init()) {
     uwrite_print_buff("All systems go!\r\n");
+    return 0;
   } else {
     uwrite_print_buff("There was an error during init\r\n");
-    // Disabled for now so we can run without an sdcard plugged in
-    //return 1;
+    return 1;
   }
 
   memset(msg, 0, sizeof(msg));
@@ -102,7 +102,7 @@ int main(void) {
       statevars.mission_started = 0;
     }
 
-    /*snprintf(msg, sizeof(msg),
+    snprintf(msg, sizeof(msg),
       "Heading: %u  Pitch: %d  Roll: %hhd\r\n",
      cmps10_heading, cmps10_pitch, cmps10_roll); 
      // Needed to cast these values to display negative pitch and roll values
@@ -113,10 +113,10 @@ int main(void) {
 
     iterations++;
 
-    if (iterations > 128) {
+    if (iterations > 256) {
       uwrite_print_buff("Finished collecting data!\r\n");
       break;
-    }*/
+    }
 
     /* Ensure that the main loop period is as long as we want it to be.
      * This means (1) triggering the main loop to restart we notice it is 
