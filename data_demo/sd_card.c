@@ -598,12 +598,13 @@ void sdcard_write_data(void) {
 
   // If the SD card is full, disable logging
   if (SDCARD_next_block >= SDCARD_num_blocks) {
+    uwrite_print_buff("***SD Card disabled: sdcard full\r\n");
     SDCARD_enabled = 0;
     return;
   }
 
   //----- DEBUG
-  uwrite_print_buff("Sending WRITE_BLOCK   (CMD18) ... got");
+  //uwrite_print_buff("Sending WRITE_BLOCK   (CMD18) ... got");
   //----- DEBUG
   sdcard_send_command(SDCMD_WRITE_BLOCK,
                       SDCARD_next_block,
@@ -611,10 +612,11 @@ void sdcard_write_data(void) {
   uint8_t write_block_response = sdcard_get_response();
 
   //----- DEBUG
-  uwrite_println_byte(&write_block_response);
+  //uwrite_println_byte(&write_block_response);
   //----- DEBUG
 
   if (write_block_response == ERROR_BYTE) {
+    uwrite_print_buff("***SD Card disabled: write_block_response\r\n");
     SDCARD_enabled = 0;
     return;
   }
@@ -643,6 +645,7 @@ void sdcard_write_data(void) {
   spi_exchange_byte(JUNK_BYTE);
 
   if (spi_exchange_byte(JUNK_BYTE) != 0xE5) {
+    uwrite_print_buff("***SD Card disabled: 0xE5, write failed\r\n");
     SDCARD_enabled = 0;
     return;
   }  

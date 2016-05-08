@@ -88,7 +88,7 @@ void led_turn_off(void) {
   // I'm not sure why OR'ing with a '0' actually worked. But we're replacing
   // the confusing syntax.
   //BUTTON_LED_PINVEC |= (0 << BUTTON_LED_PIN);
-  BUTTON_LED_PORT &= (0 << BUTTON_LED_PIN);
+  BUTTON_LED_PORT &= ~(1 << BUTTON_LED_PIN);
 
   return;
 }
