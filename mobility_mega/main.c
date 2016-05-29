@@ -11,6 +11,7 @@
 
 //statevars_t statevars;
 volatile uint8_t mainloop_timer_overflow = 0;
+uint32_t iterations = 0;
 
 // Interrupt Service Routine that triggers if the main loop is running longer
 // than it should.
@@ -42,7 +43,7 @@ int main(void) {
 
   sei();
 
-  TIMSK1 = 0b00000001;
+  TIMSK1 = 0b00000001;  // Enable only TIMER1 overflow interrupts
 
   while (1) {
 
@@ -50,7 +51,24 @@ int main(void) {
 
     mainloop_timer_overflow = 0;
 
-    mobility_stop();
+    DRIVE_PORT |= (1 << DRIVE_PIN);
+    STEERING_PORT |= (1 << STEERING_PIN);
+
+    // Bypass throttle neutral protection by sending neutral signals for at least
+    // five seconds.
+    // TODO shift the TNP procedure into the mobility initialization function
+    /*if (iterations <= 250) {
+      mobility_stop();
+      steer_to_direction(1500);
+    } else {
+      mobility_drive_fwd(Drive_Creep);
+      steer_to_direction(1200);
+    }*/
+
+    mobility_drive_few(Drive_Creep);
+    steer_to_direction(1500);
+
+    TIMSK1 = 0b00000111;  // Enable output compare timers to trigger
 
     while (1) {
       if (mainloop_timer_overflow) {
@@ -61,6 +79,8 @@ int main(void) {
         break;
       }
     } // end of busy waiting loop
+
+    iterations++;
 
   } // end of main loop
 

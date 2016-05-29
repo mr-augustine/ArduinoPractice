@@ -2,7 +2,7 @@
 F_CPU = 16000000L
 MCU = atmega2560
 
-ARD_PORT = /dev/ttyACM1
+ARD_PORT = /dev/ttyACM0
 
 TARGET = main
 
