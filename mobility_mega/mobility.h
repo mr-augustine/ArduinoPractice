@@ -16,6 +16,12 @@
 #define TURN_FULL_RIGHT       1800
 #define TURN_NEUTRAL          1500
 
+typedef enum {
+  Drive_Creep,
+  Drive_Cruise,
+  Drive_Ludicrous
+} Drive_Speed;
+
 uint8_t mobility_init(void);
 void mobility_drive_fwd(uint16_t speed);
 void mobility_drive_rev(uint16_t speed);
