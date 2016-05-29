@@ -40,10 +40,12 @@ int main(void) {
 
   mobility_init();
 
-
   sei();
 
   TIMSK1 = 0b00000001;  // Enable only TIMER1 overflow interrupts
+
+  //uint16_t steering_value = 1500;
+  //uint8_t sweeping_up = 1;
 
   while (1) {
 
@@ -51,24 +53,42 @@ int main(void) {
 
     mainloop_timer_overflow = 0;
 
-    DRIVE_PORT |= (1 << DRIVE_PIN);
+    THROTTLE_PORT |= (1 << THROTTLE_PIN);
     STEERING_PORT |= (1 << STEERING_PIN);
 
-    // Bypass throttle neutral protection by sending neutral signals for at least
-    // five seconds.
-    // TODO shift the TNP procedure into the mobility initialization function
-    /*if (iterations <= 250) {
-      mobility_stop();
-      steer_to_direction(1500);
+    mobility_drive_fwd(Drive_Creep);
+    //mobility_stop();
+    //steer_to_direction(1500);
+    /*steer_to_direction(steering_value);
+
+    if (sweeping_up) {
+      steering_value += 10;
+
+      if (steering_value > 1800) {
+        sweeping_up = 0;
+      }
     } else {
-      mobility_drive_fwd(Drive_Creep);
-      steer_to_direction(1200);
+      steering_value -= 10;
+
+      if (steering_value < 1200) {
+        sweeping_up = 1;
+      }
     }*/
 
-    mobility_drive_few(Drive_Creep);
-    steer_to_direction(1500);
+    // Drive forward for approx 5 seconds (40 loop_iterations/second * 5 = 200)
+    /*if (iterations < 200) {
+      mobility_drive_fwd(Drive_Creep);
+    } else {
+      mobility_stop();
+    }*/
 
     TIMSK1 = 0b00000111;  // Enable output compare timers to trigger
+
+
+
+
+
+
 
     while (1) {
       if (mainloop_timer_overflow) {
