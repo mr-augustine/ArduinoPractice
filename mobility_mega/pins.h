@@ -20,10 +20,10 @@
 #define STEERING_PINVEC     PINE
 #define STEERING_PIN        PE4     // Mega Digital Pin 2
 
-#define DRIVE_PORT          PORTE
-#define DRIVE_DDR           DDRE
-#define DRIVE_PINVEC        PINE
-#define DRIVE_PIN           PE5     // Mega Digital Pin 3
+#define THROTTLE_PORT       PORTE
+#define THROTTLE_DDR        DDRE
+#define THROTTLE_PINVEC     PINE
+#define THROTTLE_PIN        PE5     // Mega Digital Pin 3
 
 #endif
 
