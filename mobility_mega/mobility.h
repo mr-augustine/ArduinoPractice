@@ -6,8 +6,11 @@
 #define THROTTLE_ISR_VECT     TIMER1_COMPB_vect
 #define THROTTLE_COMPARE_REG  OCR1B
 
-#define FWD_TO_STOP_RATE_US   10
-#define REV_TO_STOP_RATE_US   50
+#define FWD_TO_STOP_RATE_US   100
+#define REV_TO_STOP_RATE_US   100
+#define REV_RATE_US           10
+#define PRE_REV_STOP_US       1400
+#define PRE_REV_HOLD_ITERS    40
 
 #define SPEED_FWD_CREEP       1600
 #define SPEED_FWD_CRUISE      1800
@@ -29,6 +32,7 @@ typedef enum {
 uint8_t mobility_init(void);
 void mobility_drive_fwd(Drive_Speed speed);
 void mobility_drive_rev(Drive_Speed speed);
+void mobility_hardstop(void);
 void mobility_stop(void);
 void steer_to_direction(uint16_t turn_degree);
 
