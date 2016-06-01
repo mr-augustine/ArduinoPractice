@@ -42,11 +42,20 @@ int main(void) {
     // using dtostrf() to print the floating point values
     //uwrite_print_buff(dtostrf(statevars.gps_latitude, 9, 4, "%f"));
 
-    memset(msg, '\0', sizeof(msg));
+    //memset(msg, '\0', sizeof(msg));
     //sprintf(msg, dtostrf(statevars.gps_latitude, 8, 4, "%f")); 
+    /*snprintf(msg, sizeof(msg),
+      dtostrf(statevars.gps_latitude, 8, 4, "%f\0"));
+    uwrite_print_buff(msg);*/
+
+    /*memset(msg, '\0', sizeof(msg));
     snprintf(msg, sizeof(msg),
-      dtostrf(statevars.gps_latitude, 8, 4, "%f"));
-    uwrite_print_buff(msg);
+      dtostrf(statevars.gps_longitude, 9, 4, "%f\0"));*/
+
+    uwrite_print_buff("lat: ");
+    uwrite_println_long(&statevars.gps_latitude);
+    uwrite_print_buff("long: ");
+    uwrite_println_long(&statevars.gps_longitude);
 
     /*memset(msg, 0, sizeof(msg));
     sprintf(msg, "sizeof(long double): %d\r\n", sizeof(long double));
@@ -58,7 +67,7 @@ int main(void) {
       //dtostrf(statevars.gps_longitude, 10, 4, "%f"));
     //uwrite_print_buff(msg);
 
-    uwrite_print_buff("sentence0: ");
+    /*uwrite_print_buff("sentence0: ");
     uwrite_print_buff(statevars.gps_sentence0);
     uwrite_print_buff("\r\n");
 
@@ -72,7 +81,7 @@ int main(void) {
 
     uwrite_print_buff("sentence3: ");
     uwrite_print_buff(statevars.gps_sentence3);
-    uwrite_print_buff("\r\n");
+    uwrite_print_buff("\r\n");*/
     _delay_ms(250);
   }
 
