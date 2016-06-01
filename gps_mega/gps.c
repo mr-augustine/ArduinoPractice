@@ -145,7 +145,8 @@ void gps_update(void) {
   if (gps_buffers[0].ready == 1) {
     //uwrite_print_buff("ready\r\n");
     memcpy(statevars.gps_sentence0, gps_buffers[0].sentence, GPS_SENTENCE_BUFF_SZ); 
-    parse_gps_sentence(statevars.gps_sentence0);
+    //parse_gps_sentence(statevars.gps_sentence0);
+    parse_gps_sentence(gps_buffers[0].sentence);
 
     memset(gps_buffers[0].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
     gps_buffers[0].ready = 0;
@@ -154,7 +155,8 @@ void gps_update(void) {
   if (gps_buffers[1].ready == 1) {
     //uwrite_print_buff("ready\r\n");
     memcpy(statevars.gps_sentence1, gps_buffers[1].sentence, GPS_SENTENCE_BUFF_SZ); 
-    parse_gps_sentence(statevars.gps_sentence1);
+    //parse_gps_sentence(statevars.gps_sentence1);
+    parse_gps_sentence(gps_buffers[1].sentence);
 
     memset(gps_buffers[1].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
     gps_buffers[1].ready = 0;
@@ -163,7 +165,8 @@ void gps_update(void) {
   if (gps_buffers[2].ready == 1) {
     //uwrite_print_buff("ready\r\n");
     memcpy(statevars.gps_sentence2, gps_buffers[2].sentence, GPS_SENTENCE_BUFF_SZ); 
-    parse_gps_sentence(statevars.gps_sentence2);
+    //parse_gps_sentence(statevars.gps_sentence2);
+    parse_gps_sentence(gps_buffers[2].sentence);
 
     memset(gps_buffers[2].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
     gps_buffers[2].ready = 0;
@@ -172,7 +175,8 @@ void gps_update(void) {
   if (gps_buffers[3].ready == 1) {
     //uwrite_print_buff("ready\r\n");
     memcpy(statevars.gps_sentence3, gps_buffers[3].sentence, GPS_SENTENCE_BUFF_SZ); 
-    parse_gps_sentence(statevars.gps_sentence3);
+    //parse_gps_sentence(statevars.gps_sentence3);
+    parse_gps_sentence(gps_buffers[3].sentence);
 
     memset(gps_buffers[3].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
     gps_buffers[3].ready = 0;
@@ -318,6 +322,7 @@ static void parse_gps_sentence(char * sentence) {
   if (strncmp(sentence, GPGGA_START, START_LENGTH) == 0) {
     // ---- DEBUG 
     uwrite_print_buff("GPGGA found!\r\n");
+    uwrite_print_buff(sentence);
     // Copy the GPGGA sentence to statevars regardless of checksum; and
     // include any null chars as well (versus strcpy)
     memcpy(statevars.gps_sentence0, sentence, GPS_SENTENCE_BUFF_SZ);
