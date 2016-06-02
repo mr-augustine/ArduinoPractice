@@ -315,6 +315,84 @@ static uint8_t parse_gpgga(char * s) {
   return 0;
 }
 
+static uint8_t parse_gpgsa(char * s) {
+  return 0;
+}
+
+// speed over ground, course over ground, date
+static uint8_t parse_gprmc(char * s) {
+  char field_buf[GPS_FIELD_BUFF_SZ];
+  memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
+
+  // $GPRMC header - ignore
+  s = strtok(s, ",");
+
+  // UTC Time - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Status
+  s = strtok(NULL, ",");
+
+  // 'A' == data valid; anything else is an error
+  // FYI: 'V' == data not valid
+  if (*s != 'A') {
+    return 1;
+  }
+
+  // Latitude - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Latitude Hemisphere - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Longitude - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Longitude Hemisphere - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Speed over ground
+  s = strtok(NULL, ",");
+  statevars.gps_ground_speed_kt = atof(s);
+
+  // Course over ground
+  s = strtok(NULL, ",");
+  statevars.gps_ground_course_deg = atof(s);
+
+  // Date - ddmmyy
+  s = strtok(NULL, ",");
+  strncpy(statevars.date, s, GPS_FIELD_BUFF_SZ);
+
+  // Magnetic variation
+  s = strtok(NULL, ",");
+  float mag_var = atof(s);
+
+  // Magnetic variation direction
+  s = strtok(NULL ",");
+  uint8_t var_is_west;
+  if (*s == 'W') {
+    var_is_west = 1;
+  } else if (*s == 'E') {
+    var_is_west = 0;
+  } else {
+    return 1;
+  }
+
+  if (var_is_west == 1) {
+    statevars.gps_mag_var_deg = -mag_var;
+  } else {
+    statevars.gps_mag_var_deg = mag_ver;
+  }
+
+  // Ignoring Mode field
+
+  return 0;
+}
+
+static uint8_t parse_gpvtg(char * s) {
+  return 0;
+}
+
 /* Parses the specified NMEA sentence and saves the values of interest
  * to the statevars variable
  */
@@ -333,15 +411,43 @@ static void parse_gps_sentence(char * sentence) {
       // TODO: Consider changing the macro to STATUS_GPS_VALID_GPGGA_RCVD
       statevars.status |= STATUS_GPS_GPGGA_RCVD;
     }
-  /*} else if (strncmp(sentence, GPVTG_START, START_LENGTH) == 0) {
-    statevars.status |= STATUS_GPS_GPVTG_RCVD;
-  } else if (strncmp(sentence, GPRMC_START, START_LENGTH) == 0) {
-    statevars.status |= STATUS_GPS_GPRMC_RCVD;
-  }*/ else {
-    // We don't care about the GPGSA and GPGSV sentences
+  } else if (strncmp(sentence, GPGSA_START, START_LENGTH) == 0) {
     // ---- DEBUG
-    uwrite_print_buff("not GPGGA found!\r\n");
-    return;}
+    uwrite_print_buff("GPGSA found!\r\n");
+    uwrite_print_buff(sentence);
+
+    memcpy(statevars.gps_sentence1, sentence, GPS_SENTENCE_BUFF_SZ);
+
+    if (validate_checksum(sentence) == 1) {
+      parse_gpgsa(sentence);
+      statevars.status |= STATUS_GPS_GPGSA_RCVD;
+    }
+  } else if (strncmp(sentence, GPRMC_START, START_LENGTH) == 0) {
+    // ---- DEBUG
+    uwrite_print_buff("GPRMC found!\r\n");
+    uwrite_print_buff(sentence);
+
+    memcpy(statevars.gps_sentence2, sentence, GPS_SENTENCE_BUFF_SZ);
+
+    if (validate_checksum(sentence) == 1) {
+      parse_gprmc(sentence);
+      statevars.status |= STATUS_GPS_GPRMC_RCVD;
+    }
+  } else if (strncmp(sentence, GPVTG_START, START_LENGTH) == 0) {
+    // ---- DEBUG
+    uwrite_print_buff("GPVTG found!\r\n");
+    uwrite_print_buff(sentence);
+
+    memcpy(statevars.gps_sentence3, sentence, GPS_SENTENCE_BUFF_SZ);
+
+    if (validate_checksum(sentence) == 1) {
+      parse_gpvtg(sentence);
+      statevars.status |= STATUS_GPS_GPVTG_RCVD;
+    }
+  } else {
+    // We don't care about the GPGSV sentences
+    // ---- DEBUG
+    uwrite_print_buff("GPGSV ignored\r\n");
   } 
 
   return;

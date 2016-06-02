@@ -13,6 +13,7 @@
 #define STATUS_GPS_GPGGA_RCVD     (1 << 5);
 #define STATUS_GPS_GPVTG_RCVD     (1 << 6);
 #define STATUS_GPS_GPRMC_RCVD     (1 << 7);
+#define STATUS_GPS_GPGSA_RCVD     (1 << 8);
 
 typedef struct {
     uint32_t prefix;
@@ -26,7 +27,10 @@ typedef struct {
     float    gps_hdop;
     float    gps_altitude_m;
     float    gps_mag_hdg_deg;
+    float    gps_mag_var_deg;
+    float    gps_ground_course_deg;
     float    gps_speed_kmph;
+    float    gps_ground_speed_kt;
     uint8_t  gps_hours;
     uint8_t  gps_minutes;
     float    gps_seconds;
