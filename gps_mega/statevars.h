@@ -28,9 +28,11 @@ typedef struct {
     float    gps_altitude_m;
     float    gps_mag_hdg_deg;
     float    gps_mag_var_deg;
+    float    gps_course_deg;
     float    gps_ground_course_deg;
     float    gps_speed_kmph;
     float    gps_ground_speed_kt;
+    float    gps_speed_kt;
     uint8_t  gps_hours;
     uint8_t  gps_minutes;
     float    gps_seconds;

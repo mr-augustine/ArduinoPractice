@@ -188,12 +188,6 @@ void gps_update(void) {
 
 /* Resets all GPS-related statevars to zero. */
 static void initialize_gps_statevars() {
-  // You only want to reset the sentence statevars after they are written
-  // to the SD card
-  //memset(statevars.gps_sentence0, '\0', GPS_SENTENCE_LENGTH);
-  //memset(statevars.gps_sentence1, '\0', GPS_SENTENCE_LENGTH);
-  //memset(statevars.gps_sentence2, '\0', GPS_SENTENCE_LENGTH);
-  //memset(statevars.gps_sentence3, '\0', GPS_SENTENCE_LENGTH);
   statevars.gps_latitude = 0.0;
   statevars.gps_longitude = 0.0;
   statevars.gps_hdop = 0.0;
@@ -391,6 +385,53 @@ static uint8_t parse_gprmc(char * s) {
 
 // true course, magnetic course, speed in knots, speed in km/hr
 static uint8_t parse_gpvtg(char * s) {
+  char field_buf[GPS_FIELD_BUFF_SZ];
+  memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
+
+  // $GPVTG header - ignore
+  s = strtok(s, ",");
+
+  // Course
+  // only write the course value to statevars if the reference field that follows
+  // is valid
+  s = strtok(NULL, ",");
+  float course_deg = atof(s);
+
+  // Course reference
+  s = strtok(NULL, ",");
+  if (*s != 'T') {
+    return 1; 
+  }
+  statevars.gps_course_deg = course_deg;
+
+  // Speed in knots
+  // only write the speed value to statevars if the reference field that follows
+  // is valid
+  s = strtok(NULL, ",");
+  float speed_knots = atof(s);
+
+  // Speed reference
+  s = strtok(NULL, ",");
+  if (*s != 'N') {
+    return 1;
+  }
+  statevars.gps_speed_kt = speed_knots;
+
+  // Speed in kmph
+  // only write the speed value to statevars if the reference field that follows
+  // is valid
+  s = strtok(NULL, ",");
+  float speed_kmph = atof(s);
+
+  // Speed reference
+  s = strtok(NULL, ",");
+  if (*s != 'K') {
+    return 1;
+  }
+  statevars.gps_speed_kmph = speed_kmph;
+
+  // Ignoring Mode field
+
   return 0;
 }
 
