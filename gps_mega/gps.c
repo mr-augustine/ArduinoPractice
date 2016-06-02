@@ -361,14 +361,14 @@ static uint8_t parse_gprmc(char * s) {
 
   // Date - ddmmyy
   s = strtok(NULL, ",");
-  strncpy(statevars.date, s, GPS_FIELD_BUFF_SZ);
+  strncpy(statevars.gps_date, s, GPS_FIELD_BUFF_SZ);
 
   // Magnetic variation
   s = strtok(NULL, ",");
   float mag_var = atof(s);
 
   // Magnetic variation direction
-  s = strtok(NULL ",");
+  s = strtok(NULL, ",");
   uint8_t var_is_west;
   if (*s == 'W') {
     var_is_west = 1;
@@ -381,7 +381,7 @@ static uint8_t parse_gprmc(char * s) {
   if (var_is_west == 1) {
     statevars.gps_mag_var_deg = -mag_var;
   } else {
-    statevars.gps_mag_var_deg = mag_ver;
+    statevars.gps_mag_var_deg = mag_var;
   }
 
   // Ignoring Mode field
@@ -389,6 +389,7 @@ static uint8_t parse_gprmc(char * s) {
   return 0;
 }
 
+// true course, magnetic course, speed in knots, speed in km/hr
 static uint8_t parse_gpvtg(char * s) {
   return 0;
 }
