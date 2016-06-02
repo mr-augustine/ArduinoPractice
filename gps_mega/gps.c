@@ -25,6 +25,9 @@ static volatile uint8_t gps_unexpected_start = 0;
 static uint8_t hexchar_to_dec(char c);
 static void initialize_gps_statevars();
 static uint8_t parse_gpgga(char * s);
+static uint8_t parse_gpgsa(char * s);
+static uint8_t parse_gprmc(char * s);
+static uint8_t parse_gpvtg(char * s);
 static void parse_gps_sentence(char * sentence);
 static uint8_t validate_checksum(char * s);
 
@@ -309,7 +312,37 @@ static uint8_t parse_gpgga(char * s) {
   return 0;
 }
 
+// pdop, vdop
 static uint8_t parse_gpgsa(char * s) {
+  char field_buf[GPS_FIELD_BUFF_SZ];
+  memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
+
+  // $GPGSA header - ignore
+  s = strtok(s, ",");
+
+  // Mode 1 - ignore
+  s = strtok(s, ",");
+
+  // Mode 2 - ignore
+  s = strtok(s, ",");
+
+  // Satellite Used (12 total)
+  uint8_t i;
+  for (i = 0; i < 12; i++) {
+    s = strtok(s, ",");
+  }
+
+  // Position Dilution of Precision (PDOP)
+  s = strtok(s, ",");
+  statevars.gps_pdop = atof(s);
+
+  // HDOP - ignore (we get this from $GPGGA)
+  s = strtok(s, ",");
+
+  // Vertical Dilution of Precision (VDOP)
+  s = strtok(s, ",");
+  statevars.gps_vdop = atof(s);
+
   return 0;
 }
 
@@ -349,7 +382,7 @@ static uint8_t parse_gprmc(char * s) {
   s = strtok(NULL, ",");
   statevars.gps_ground_speed_kt = atof(s);
 
-  // Course over ground
+  // True course over ground
   s = strtok(NULL, ",");
   statevars.gps_ground_course_deg = atof(s);
 
@@ -391,20 +424,33 @@ static uint8_t parse_gpvtg(char * s) {
   // $GPVTG header - ignore
   s = strtok(s, ",");
 
-  // Course
+  // Course - True heading
   // only write the course value to statevars if the reference field that follows
   // is valid
   s = strtok(NULL, ",");
-  float course_deg = atof(s);
+  float true_hdg_deg = atof(s);
 
   // Course reference
   s = strtok(NULL, ",");
   if (*s != 'T') {
     return 1; 
   }
-  statevars.gps_course_deg = course_deg;
+  statevars.gps_true_hdg_deg = true_hdg_deg;
 
-  // Speed in knots
+  // Course - Magnetic heading
+  // only write the course value to statevars if the reference field that follows
+  // is valid
+  s = strtok(NULL, ",");
+  float mag_hdg_deg = atof(s);
+
+  // Course reference
+  s = strtok(NULL, ",");
+  if (*s != 'M') {
+    return 1;
+  }
+  statevars.gps_mag_hdg_deg = mag_hdg_deg;
+
+  // Horizontal speed in knots
   // only write the speed value to statevars if the reference field that follows
   // is valid
   s = strtok(NULL, ",");
@@ -417,7 +463,7 @@ static uint8_t parse_gpvtg(char * s) {
   }
   statevars.gps_speed_kt = speed_knots;
 
-  // Speed in kmph
+  // Horizontal speed in kmph
   // only write the speed value to statevars if the reference field that follows
   // is valid
   s = strtok(NULL, ",");
