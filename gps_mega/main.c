@@ -88,8 +88,6 @@ static void print_gprmc_fields(void) {
   uwrite_print_buff("date: ");
   uwrite_print_buff(statevars.gps_date);
   uwrite_print_buff("\r\n");
-  uwrite_print_buff("mag var (deg): ");
-  uwrite_println_long(&statevars.gps_mag_var_deg);
 
   return;
 }

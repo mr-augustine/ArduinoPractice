@@ -32,7 +32,6 @@ typedef struct {
     float    gps_vdop;
     float    gps_msl_altitude_m;
     float    gps_true_hdg_deg;
-    float    gps_mag_var_deg;
     float    gps_ground_course_deg;
     float    gps_speed_kmph;
     float    gps_ground_speed_kt;
