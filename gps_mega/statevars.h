@@ -14,6 +14,9 @@
 #define STATUS_GPS_GPVTG_RCVD     (1 << 6);
 #define STATUS_GPS_GPRMC_RCVD     (1 << 7);
 #define STATUS_GPS_GPGSA_RCVD     (1 << 8);
+#define STATUS_GPS_NO_FIX_AVAIL   (1 << 9);
+#define STATUS_GPS_UNEXPECT_VAL   (1 << 10);
+#define STATUS_GPS_DATA_NOT_VALID (1 << 11);
 
 typedef struct {
     uint32_t prefix;
@@ -27,9 +30,8 @@ typedef struct {
     float    gps_hdop;
     float    gps_pdop;
     float    gps_vdop;
-    float    gps_altitude_m;
+    float    gps_msl_altitude_m;
     float    gps_true_hdg_deg;
-    float    gps_mag_hdg_deg;
     float    gps_mag_var_deg;
     float    gps_ground_course_deg;
     float    gps_speed_kmph;

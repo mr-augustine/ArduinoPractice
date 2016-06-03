@@ -188,15 +188,20 @@ void gps_update(void) {
   return;
 }
 
-
 /* Resets all GPS-related statevars to zero. */
 static void initialize_gps_statevars() {
   statevars.gps_latitude = 0.0;
   statevars.gps_longitude = 0.0;
   statevars.gps_hdop = 0.0;
-  statevars.gps_altitude_m = 0.0;
-  statevars.gps_mag_hdg_deg = 0.0;
+  statevars.gps_pdop = 0.0;
+  statevars.gps_vdop = 0.0;
+  statevars.gps_msl_altitude_m = 0.0;
+  statevars.gps_true_hdg_deg = 0.0;
+  statevars.gps_mag_var_deg = 0.0;
+  statevars.gps_ground_course_deg = 0.0;
   statevars.gps_speed_kmph = 0.0;
+  statevars.gps_ground_speed_kt = 0.0;
+  statevars.gps_speed_kt = 0.0;
   statevars.gps_hours = 0;
   statevars.gps_minutes = 0;
   statevars.gps_seconds = 0.0;
@@ -222,7 +227,7 @@ static uint8_t parse_gpgga(char * s) {
   // $GPGGA header - ignore
   s = strtok(s, ",");
 
-  // UTC Time
+  // UTC Time - hhmmss.sss
   s = strtok(NULL, ",");
   strncpy(field_buf, s, 2);
   statevars.gps_hours = atoi(field_buf);
@@ -235,7 +240,7 @@ static uint8_t parse_gpgga(char * s) {
   strncpy(field_buf, s+4, 6);
   statevars.gps_seconds = atof(field_buf);
 
-  // Latitude
+  // Latitude - ddmm.mmmm
   s = strtok(NULL, ",");
   memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
   strncpy(field_buf, s, 2);
@@ -253,10 +258,11 @@ static uint8_t parse_gpgga(char * s) {
   } else if (*s == 'S') {
     lat_is_south = 1;
   } else {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
     return 1;
   }
 
-  // Longitude
+  // Longitude - dddmm.mmmm
   s = strtok(NULL, ",");
   memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
   strncpy(field_buf, s, 3);
@@ -274,6 +280,7 @@ static uint8_t parse_gpgga(char * s) {
   } else if (*s == 'E') {
     long_is_west = 0;
   } else {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
     return 1;
   }
 
@@ -292,8 +299,9 @@ static uint8_t parse_gpgga(char * s) {
 
   // Position (Fix) Indicator
   s = strtok(NULL, ",");
-  // If there is no fix
+  // If there is no fix, set an error flag and error out
   if (*s == GPS_NO_FIX) {
+    statevars.status |= STATUS_GPS_NO_FIX_AVAIL;
     return 1;
   }
 
@@ -305,9 +313,9 @@ static uint8_t parse_gpgga(char * s) {
   s = strtok(NULL, ",");
   statevars.gps_hdop = atof(s);
 
-  // Altitude
+  // Mean Sea Level Altitude
   s = strtok(NULL, ",");
-  statevars.gps_altitude_m = atof(s);
+  statevars.gps_msl_altitude_m = atof(s);
 
   return 0;
 }
@@ -359,10 +367,10 @@ static uint8_t parse_gprmc(char * s) {
 
   // Status
   s = strtok(NULL, ",");
-
   // 'A' == data valid; anything else is an error
   // FYI: 'V' == data not valid
   if (*s != 'A') {
+    statevars.status |= STATUS_GPS_DATA_NOT_VALID;
     return 1;
   }
 
@@ -402,6 +410,7 @@ static uint8_t parse_gprmc(char * s) {
   } else if (*s == 'E') {
     var_is_west = 0;
   } else {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
     return 1;
   }
 
@@ -433,22 +442,16 @@ static uint8_t parse_gpvtg(char * s) {
   // Course reference
   s = strtok(NULL, ",");
   if (*s != 'T') {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
     return 1; 
   }
   statevars.gps_true_hdg_deg = true_hdg_deg;
 
-  // Course - Magnetic heading
-  // only write the course value to statevars if the reference field that follows
-  // is valid
+  // Course - Magnetic heading - ignore (we get this from a compass)
   s = strtok(NULL, ",");
-  float mag_hdg_deg = atof(s);
 
-  // Course reference
+  // Course reference - ignore (belongs with course magnetic heading)
   s = strtok(NULL, ",");
-  if (*s != 'M') {
-    return 1;
-  }
-  statevars.gps_mag_hdg_deg = mag_hdg_deg;
 
   // Horizontal speed in knots
   // only write the speed value to statevars if the reference field that follows
@@ -459,6 +462,7 @@ static uint8_t parse_gpvtg(char * s) {
   // Speed reference
   s = strtok(NULL, ",");
   if (*s != 'N') {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
     return 1;
   }
   statevars.gps_speed_kt = speed_knots;
@@ -472,6 +476,7 @@ static uint8_t parse_gpvtg(char * s) {
   // Speed reference
   s = strtok(NULL, ",");
   if (*s != 'K') {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
     return 1;
   }
   statevars.gps_speed_kmph = speed_kmph;
