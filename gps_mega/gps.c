@@ -442,7 +442,7 @@ static uint8_t parse_gprmc(char * s) {
   return 0;
 }
 
-// true course, magnetic course, speed in knots, speed in km/hr
+// true course in deg, speed in knots, speed in km/hr
 static uint8_t parse_gpvtg(char * s) {
   char field_buf[GPS_FIELD_BUFF_SZ];
   memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
@@ -464,11 +464,14 @@ static uint8_t parse_gpvtg(char * s) {
   }
   statevars.gps_true_hdg_deg = true_hdg_deg;
 
-  // Course - Magnetic heading - ignore (we get this from a compass)
+  // Course - Magnetic heading - won't exist for us since we haven't configured
+  // the gps sensor to provide this. This should point to the next field ('M').
   s = strtok(NULL, ",");
 
   // Course reference - ignore (belongs with course magnetic heading)
-  s = strtok(NULL, ",");
+  // Note: We don't need to advance the cursor since the previous field doesn't
+  // exist
+  //s = strtok(NULL, ",");
 
   // Horizontal speed in knots
   // only write the speed value to statevars if the reference field that follows

@@ -12,8 +12,8 @@
 
 //static void print_gpgga_fields(void);
 //static void print_gpgsa_fields(void);
-static void print_gprmc_fields(void);
-//static void print_gpvtg_fields(void);
+//static void print_gprmc_fields(void);
+static void print_gpvtg_fields(void);
 
 statevars_t statevars;
 
@@ -39,10 +39,10 @@ int main(void) {
     //print_gpgsa_fields();
 
     // Print all $GPRMC fields that we are interested in
-    print_gprmc_fields();
+    //print_gprmc_fields();
 
     // Print all $GPVTG fields that we are interested in
-    //print_gpvtg_fields();
+    print_gpvtg_fields();
 
     _delay_ms(250);
   }
@@ -80,7 +80,7 @@ int main(void) {
   return;
 }*/
 
-static void print_gprmc_fields(void) {
+/*static void print_gprmc_fields(void) {
   uwrite_print_buff("gnd speed (kt): ");
   uwrite_println_long(&statevars.gps_ground_speed_kt);
   uwrite_print_buff("gnd course (deg): ");
@@ -92,10 +92,16 @@ static void print_gprmc_fields(void) {
   uwrite_println_long(&statevars.gps_mag_var_deg);
 
   return;
-}
-
-/*static void print_gpvtg_fields(void) {
-
-  return;
 }*/
+
+static void print_gpvtg_fields(void) {
+  uwrite_print_buff("true course (deg): ");
+  uwrite_println_long(&statevars.gps_true_hdg_deg);
+  uwrite_print_buff("speed (kt): ");
+  uwrite_println_long(&statevars.gps_speed_kt);
+  uwrite_print_buff("speed (kmph): ");
+  uwrite_println_long(&statevars.gps_speed_kmph);
+ 
+  return;
+}
 
