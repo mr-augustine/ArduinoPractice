@@ -367,7 +367,7 @@ static uint8_t parse_gpgsa(char * s) {
   return 0;
 }
 
-// speed over ground, course over ground, date
+// speed over ground, course over ground, date, magnetic variation
 static uint8_t parse_gprmc(char * s) {
   char field_buf[GPS_FIELD_BUFF_SZ];
   memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
@@ -412,7 +412,11 @@ static uint8_t parse_gprmc(char * s) {
   strncpy(statevars.gps_date, s, GPS_FIELD_BUFF_SZ);
 
   // Magnetic variation
+  // Note: this field may be empty if the vehicle is not moving
   s = strtok(NULL, ",");
+  if (s == NULL) {
+    return 0;
+  }
   float mag_var = atof(s);
 
   // Magnetic variation direction
