@@ -197,7 +197,6 @@ static void initialize_gps_statevars() {
   statevars.gps_vdop = 0.0;
   statevars.gps_msl_altitude_m = 0.0;
   statevars.gps_true_hdg_deg = 0.0;
-  statevars.gps_mag_var_deg = 0.0;
   statevars.gps_ground_course_deg = 0.0;
   statevars.gps_speed_kmph = 0.0;
   statevars.gps_ground_speed_kt = 0.0;
@@ -411,31 +410,10 @@ static uint8_t parse_gprmc(char * s) {
   s = strtok(NULL, ",");
   strncpy(statevars.gps_date, s, GPS_FIELD_BUFF_SZ);
 
-  // Magnetic variation
-  // Note: this field may be empty if the vehicle is not moving
-  s = strtok(NULL, ",");
-  if (s == NULL) {
-    return 0;
-  }
-  float mag_var = atof(s);
+  // Ignoring Magnetic variation - ignoring; this won't exist because we
+  // haven't configured the GPS sensor to produce this value
 
-  // Magnetic variation direction
-  s = strtok(NULL, ",");
-  uint8_t var_is_west;
-  if (*s == 'W') {
-    var_is_west = 1;
-  } else if (*s == 'E') {
-    var_is_west = 0;
-  } else {
-    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
-    return 1;
-  }
-
-  if (var_is_west == 1) {
-    statevars.gps_mag_var_deg = -mag_var;
-  } else {
-    statevars.gps_mag_var_deg = mag_var;
-  }
+  // Ignoring Magnetic variation direction
 
   // Ignoring Mode field
 
