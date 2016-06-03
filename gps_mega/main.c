@@ -10,6 +10,11 @@
 
 #include <util/delay.h>
 
+static void print_gpgga_fields(void);
+//static void print_gpgsa_fields(void);
+//static void print_gprmc_fields(void);
+//static void print_gpvtg_fields(void);
+
 statevars_t statevars;
 
 int main(void) {
@@ -20,71 +25,64 @@ int main(void) {
   uwrite_init();
   gps_init();
 
-  // It looks like the uwrite and gps libraries cannot play
-  // nicely together on the same USART port. Switch to the Mega.
-  uwrite_print_buff("Here\r\n");
+  uwrite_print_buff("Starting...\r\n");
 
   while (1) {
     statevars.status = 0;
 
     gps_update();
 
-    //uwrite_print_buff("statevars.status: ");
-    //uwrite_print_long(&statevars.status);
-    /*snprintf(msg, sizeof(msg),
-      "lat: %f long: %f\r\n",
-      32.3, 33.4);*/
-      //(double) statevars.gps_latitude, (double) statevars.gps_longitude); 
-      //"satcount: %d\r\n",
-      //statevars.gps_satcount);
-    //uwrite_print_buff(msg);
+    // Print all $GPGGA fields that we are interested in
+    print_gpgga_fields();
 
-    // using dtostrf() to print the floating point values
-    //uwrite_print_buff(dtostrf(statevars.gps_latitude, 9, 4, "%f"));
+    // Print all $GPGSA fields that we are interested in
+    //print_gpgsa_fields();
 
-    //memset(msg, '\0', sizeof(msg));
-    //sprintf(msg, dtostrf(statevars.gps_latitude, 8, 4, "%f")); 
-    /*snprintf(msg, sizeof(msg),
-      dtostrf(statevars.gps_latitude, 8, 4, "%f\0"));
-    uwrite_print_buff(msg);*/
+    // Print all $GPRMC fields that we are interested in
+    //print_gprmc_fields();
 
-    /*memset(msg, '\0', sizeof(msg));
-    snprintf(msg, sizeof(msg),
-      dtostrf(statevars.gps_longitude, 9, 4, "%f\0"));*/
+    // Print all $GPVTG fields that we are interested in
+    //print_gpvtg_fields();
 
-    uwrite_print_buff("lat: ");
-    uwrite_println_long(&statevars.gps_latitude);
-    uwrite_print_buff("long: ");
-    uwrite_println_long(&statevars.gps_longitude);
-
-    /*memset(msg, 0, sizeof(msg));
-    sprintf(msg, "sizeof(long double): %d\r\n", sizeof(long double));
-    uwrite_print_buff(msg);*/
-    /*uwrite_print_buff(", ");
-    memset(msg, 0, sizeof(msg));
-    snprintf(msg, sizeof(msg),
-      dtostrf(statevars.gps_longitude, 5, 8, "%f"));*/
-      //dtostrf(statevars.gps_longitude, 10, 4, "%f"));
-    //uwrite_print_buff(msg);
-
-    /*uwrite_print_buff("sentence0: ");
-    uwrite_print_buff(statevars.gps_sentence0);
-    uwrite_print_buff("\r\n");
-
-    uwrite_print_buff("sentence1: ");
-    uwrite_print_buff(statevars.gps_sentence1);
-    uwrite_print_buff("\r\n");
-
-    uwrite_print_buff("sentence2: ");
-    uwrite_print_buff(statevars.gps_sentence2);
-    uwrite_print_buff("\r\n");
-
-    uwrite_print_buff("sentence3: ");
-    uwrite_print_buff(statevars.gps_sentence3);
-    uwrite_print_buff("\r\n");*/
     _delay_ms(250);
   }
 
   return 0;
 }
+
+static void print_gpgga_fields(void) {
+  uwrite_print_buff("hours: ");
+  uwrite_println_byte(&statevars.gps_hours);
+  uwrite_print_buff("minutes: ");
+  uwrite_println_byte(&statevars.gps_minutes);
+  uwrite_print_buff("seconds: ");
+  uwrite_println_long(&statevars.gps_seconds);
+  uwrite_print_buff("lat: ");
+  uwrite_println_long(&statevars.gps_latitude);
+  uwrite_print_buff("long: ");
+  uwrite_println_long(&statevars.gps_longitude);
+  uwrite_print_buff("sat count: ");
+  uwrite_println_byte(&statevars.gps_satcount);
+  uwrite_print_buff("hdop: ");
+  uwrite_println_long(&statevars.gps_hdop);
+  uwrite_print_buff("msl alt: ");
+  uwrite_println_long(&statevars.gps_msl_altitude_m);
+
+  return;
+}
+
+/*static void print_gpgsa_fields(void) {
+
+  return;
+}*/
+
+/*static void print_gprmc_fields(void) {
+
+  return;
+}*/
+
+/*static void print_gpvtg_fields(void) {
+
+  return;
+}*/
 
