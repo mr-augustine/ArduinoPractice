@@ -25,6 +25,9 @@ static volatile uint8_t gps_unexpected_start = 0;
 static uint8_t hexchar_to_dec(char c);
 static void initialize_gps_statevars();
 static uint8_t parse_gpgga(char * s);
+static uint8_t parse_gpgsa(char * s);
+static uint8_t parse_gprmc(char * s);
+static uint8_t parse_gpvtg(char * s);
 static void parse_gps_sentence(char * sentence);
 static uint8_t validate_checksum(char * s);
 
@@ -185,21 +188,20 @@ void gps_update(void) {
   return;
 }
 
-
 /* Resets all GPS-related statevars to zero. */
 static void initialize_gps_statevars() {
-  // You only want to reset the sentence statevars after they are written
-  // to the SD card
-  //memset(statevars.gps_sentence0, '\0', GPS_SENTENCE_LENGTH);
-  //memset(statevars.gps_sentence1, '\0', GPS_SENTENCE_LENGTH);
-  //memset(statevars.gps_sentence2, '\0', GPS_SENTENCE_LENGTH);
-  //memset(statevars.gps_sentence3, '\0', GPS_SENTENCE_LENGTH);
   statevars.gps_latitude = 0.0;
   statevars.gps_longitude = 0.0;
   statevars.gps_hdop = 0.0;
-  statevars.gps_altitude_m = 0.0;
-  statevars.gps_mag_hdg_deg = 0.0;
+  statevars.gps_pdop = 0.0;
+  statevars.gps_vdop = 0.0;
+  statevars.gps_msl_altitude_m = 0.0;
+  statevars.gps_true_hdg_deg = 0.0;
+  statevars.gps_mag_var_deg = 0.0;
+  statevars.gps_ground_course_deg = 0.0;
   statevars.gps_speed_kmph = 0.0;
+  statevars.gps_ground_speed_kt = 0.0;
+  statevars.gps_speed_kt = 0.0;
   statevars.gps_hours = 0;
   statevars.gps_minutes = 0;
   statevars.gps_seconds = 0.0;
@@ -225,7 +227,7 @@ static uint8_t parse_gpgga(char * s) {
   // $GPGGA header - ignore
   s = strtok(s, ",");
 
-  // UTC Time
+  // UTC Time - hhmmss.sss
   s = strtok(NULL, ",");
   strncpy(field_buf, s, 2);
   statevars.gps_hours = atoi(field_buf);
@@ -238,7 +240,7 @@ static uint8_t parse_gpgga(char * s) {
   strncpy(field_buf, s+4, 6);
   statevars.gps_seconds = atof(field_buf);
 
-  // Latitude
+  // Latitude - ddmm.mmmm
   s = strtok(NULL, ",");
   memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
   strncpy(field_buf, s, 2);
@@ -256,10 +258,11 @@ static uint8_t parse_gpgga(char * s) {
   } else if (*s == 'S') {
     lat_is_south = 1;
   } else {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
     return 1;
   }
 
-  // Longitude
+  // Longitude - dddmm.mmmm
   s = strtok(NULL, ",");
   memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
   strncpy(field_buf, s, 3);
@@ -277,6 +280,7 @@ static uint8_t parse_gpgga(char * s) {
   } else if (*s == 'E') {
     long_is_west = 0;
   } else {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
     return 1;
   }
 
@@ -295,8 +299,9 @@ static uint8_t parse_gpgga(char * s) {
 
   // Position (Fix) Indicator
   s = strtok(NULL, ",");
-  // If there is no fix
+  // If there is no fix, set an error flag and error out
   if (*s == GPS_NO_FIX) {
+    statevars.status |= STATUS_GPS_NO_FIX_AVAIL;
     return 1;
   }
 
@@ -308,9 +313,195 @@ static uint8_t parse_gpgga(char * s) {
   s = strtok(NULL, ",");
   statevars.gps_hdop = atof(s);
 
-  // Altitude
+  // Mean Sea Level Altitude
   s = strtok(NULL, ",");
-  statevars.gps_altitude_m = atof(s);
+  statevars.gps_msl_altitude_m = atof(s);
+
+  return 0;
+}
+
+// pdop, vdop
+static uint8_t parse_gpgsa(char * s) {
+  char field_buf[GPS_FIELD_BUFF_SZ];
+  memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
+
+  // $GPGSA header - ignore
+  s = strtok(s, ",");
+
+  // Mode 1 - ignore
+  s = strtok(NULL, ",");
+
+  // Mode 2 - ignore
+  s = strtok(NULL, ",");
+
+  // Satellite Used (12 total) - ignore all
+  // Note: empty fields (e.g., ",,,,") will be skipped by strtok
+  // So we'll look for the first occurrence of a field with a decimal point.
+  // This first occurrence will be the PDOP field.
+  uint8_t i;
+  for (i = 0; i < 12; i++) {
+    s = strtok(NULL, ",");
+
+    // We found the PDOP field
+    if (*(s + 1) == '.') {
+      break;
+    }
+  }
+
+  // Position Dilution of Precision (PDOP)
+  // We only advance the cursor if all satellite fields contained values.
+  // If there is at least one unused satellite field, then the cursor would
+  // already be pointing to the PDOP field.
+  if (i == 12) {
+    s = strtok(NULL, ",");
+  }
+  statevars.gps_pdop = atof(s);
+
+  // HDOP - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Vertical Dilution of Precision (VDOP)
+  s = strtok(NULL, ",");
+  statevars.gps_vdop = atof(s);
+
+  return 0;
+}
+
+// speed over ground, course over ground, date, magnetic variation
+static uint8_t parse_gprmc(char * s) {
+  char field_buf[GPS_FIELD_BUFF_SZ];
+  memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
+
+  // $GPRMC header - ignore
+  s = strtok(s, ",");
+
+  // UTC Time - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Status
+  s = strtok(NULL, ",");
+  // 'A' == data valid; anything else is an error
+  // FYI: 'V' == data not valid
+  if (*s != 'A') {
+    statevars.status |= STATUS_GPS_DATA_NOT_VALID;
+    return 1;
+  }
+
+  // Latitude - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Latitude Hemisphere - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Longitude - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Longitude Hemisphere - ignore (we get this from $GPGGA)
+  s = strtok(NULL, ",");
+
+  // Speed over ground
+  s = strtok(NULL, ",");
+  statevars.gps_ground_speed_kt = atof(s);
+
+  // True course over ground
+  s = strtok(NULL, ",");
+  statevars.gps_ground_course_deg = atof(s);
+
+  // Date - ddmmyy
+  s = strtok(NULL, ",");
+  strncpy(statevars.gps_date, s, GPS_FIELD_BUFF_SZ);
+
+  // Magnetic variation
+  // Note: this field may be empty if the vehicle is not moving
+  s = strtok(NULL, ",");
+  if (s == NULL) {
+    return 0;
+  }
+  float mag_var = atof(s);
+
+  // Magnetic variation direction
+  s = strtok(NULL, ",");
+  uint8_t var_is_west;
+  if (*s == 'W') {
+    var_is_west = 1;
+  } else if (*s == 'E') {
+    var_is_west = 0;
+  } else {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
+    return 1;
+  }
+
+  if (var_is_west == 1) {
+    statevars.gps_mag_var_deg = -mag_var;
+  } else {
+    statevars.gps_mag_var_deg = mag_var;
+  }
+
+  // Ignoring Mode field
+
+  return 0;
+}
+
+// true course in deg, speed in knots, speed in km/hr
+static uint8_t parse_gpvtg(char * s) {
+  char field_buf[GPS_FIELD_BUFF_SZ];
+  memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
+
+  // $GPVTG header - ignore
+  s = strtok(s, ",");
+
+  // Course - True heading
+  // only write the course value to statevars if the reference field that follows
+  // is valid
+  s = strtok(NULL, ",");
+  float true_hdg_deg = atof(s);
+
+  // Course reference
+  s = strtok(NULL, ",");
+  if (*s != 'T') {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
+    return 1; 
+  }
+  statevars.gps_true_hdg_deg = true_hdg_deg;
+
+  // Course - Magnetic heading - won't exist for us since we haven't configured
+  // the gps sensor to provide this. This should point to the next field ('M').
+  s = strtok(NULL, ",");
+
+  // Course reference - ignore (belongs with course magnetic heading)
+  // Note: We don't need to advance the cursor since the previous field doesn't
+  // exist
+  //s = strtok(NULL, ",");
+
+  // Horizontal speed in knots
+  // only write the speed value to statevars if the reference field that follows
+  // is valid
+  s = strtok(NULL, ",");
+  float speed_knots = atof(s);
+
+  // Speed reference
+  s = strtok(NULL, ",");
+  if (*s != 'N') {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
+    return 1;
+  }
+  statevars.gps_speed_kt = speed_knots;
+
+  // Horizontal speed in kmph
+  // only write the speed value to statevars if the reference field that follows
+  // is valid
+  s = strtok(NULL, ",");
+  float speed_kmph = atof(s);
+
+  // Speed reference
+  s = strtok(NULL, ",");
+  if (*s != 'K') {
+    statevars.status |= STATUS_GPS_UNEXPECT_VAL;
+    return 1;
+  }
+  statevars.gps_speed_kmph = speed_kmph;
+
+  // Ignoring Mode field
 
   return 0;
 }
@@ -333,15 +524,43 @@ static void parse_gps_sentence(char * sentence) {
       // TODO: Consider changing the macro to STATUS_GPS_VALID_GPGGA_RCVD
       statevars.status |= STATUS_GPS_GPGGA_RCVD;
     }
-  /*} else if (strncmp(sentence, GPVTG_START, START_LENGTH) == 0) {
-    statevars.status |= STATUS_GPS_GPVTG_RCVD;
-  } else if (strncmp(sentence, GPRMC_START, START_LENGTH) == 0) {
-    statevars.status |= STATUS_GPS_GPRMC_RCVD;
-  }*/ else {
-    // We don't care about the GPGSA and GPGSV sentences
+  } else if (strncmp(sentence, GPGSA_START, START_LENGTH) == 0) {
     // ---- DEBUG
-    uwrite_print_buff("not GPGGA found!\r\n");
-    return;}
+    uwrite_print_buff("GPGSA found!\r\n");
+    uwrite_print_buff(sentence);
+
+    memcpy(statevars.gps_sentence1, sentence, GPS_SENTENCE_BUFF_SZ);
+
+    if (validate_checksum(sentence) == 1) {
+      parse_gpgsa(sentence);
+      statevars.status |= STATUS_GPS_GPGSA_RCVD;
+    }
+  } else if (strncmp(sentence, GPRMC_START, START_LENGTH) == 0) {
+    // ---- DEBUG
+    uwrite_print_buff("GPRMC found!\r\n");
+    uwrite_print_buff(sentence);
+
+    memcpy(statevars.gps_sentence2, sentence, GPS_SENTENCE_BUFF_SZ);
+
+    if (validate_checksum(sentence) == 1) {
+      parse_gprmc(sentence);
+      statevars.status |= STATUS_GPS_GPRMC_RCVD;
+    }
+  } else if (strncmp(sentence, GPVTG_START, START_LENGTH) == 0) {
+    // ---- DEBUG
+    uwrite_print_buff("GPVTG found!\r\n");
+    uwrite_print_buff(sentence);
+
+    memcpy(statevars.gps_sentence3, sentence, GPS_SENTENCE_BUFF_SZ);
+
+    if (validate_checksum(sentence) == 1) {
+      parse_gpvtg(sentence);
+      statevars.status |= STATUS_GPS_GPVTG_RCVD;
+    }
+  } else {
+    // We don't care about the GPGSV sentences
+    // ---- DEBUG
+    uwrite_print_buff("GPGSV ignored\r\n");
   } 
 
   return;
