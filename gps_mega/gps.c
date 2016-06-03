@@ -329,26 +329,39 @@ static uint8_t parse_gpgsa(char * s) {
   s = strtok(s, ",");
 
   // Mode 1 - ignore
-  s = strtok(s, ",");
+  s = strtok(NULL, ",");
 
   // Mode 2 - ignore
-  s = strtok(s, ",");
+  s = strtok(NULL, ",");
 
-  // Satellite Used (12 total)
+  // Satellite Used (12 total) - ignore all
+  // Note: empty fields (e.g., ",,,,") will be skipped by strtok
+  // So we'll look for the first occurrence of a field with a decimal point.
+  // This first occurrence will be the PDOP field.
   uint8_t i;
   for (i = 0; i < 12; i++) {
-    s = strtok(s, ",");
+    s = strtok(NULL, ",");
+
+    // We found the PDOP field
+    if (*(s + 1) == '.') {
+      break;
+    }
   }
 
   // Position Dilution of Precision (PDOP)
-  s = strtok(s, ",");
+  // We only advance the cursor if all satellite fields contained values.
+  // If there is at least one unused satellite field, then the cursor would
+  // already be pointing to the PDOP field.
+  if (i == 12) {
+    s = strtok(NULL, ",");
+  }
   statevars.gps_pdop = atof(s);
 
   // HDOP - ignore (we get this from $GPGGA)
-  s = strtok(s, ",");
+  s = strtok(NULL, ",");
 
   // Vertical Dilution of Precision (VDOP)
-  s = strtok(s, ",");
+  s = strtok(NULL, ",");
   statevars.gps_vdop = atof(s);
 
   return 0;

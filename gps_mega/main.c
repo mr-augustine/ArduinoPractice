@@ -10,8 +10,8 @@
 
 #include <util/delay.h>
 
-static void print_gpgga_fields(void);
-//static void print_gpgsa_fields(void);
+//static void print_gpgga_fields(void);
+static void print_gpgsa_fields(void);
 //static void print_gprmc_fields(void);
 //static void print_gpvtg_fields(void);
 
@@ -33,10 +33,10 @@ int main(void) {
     gps_update();
 
     // Print all $GPGGA fields that we are interested in
-    print_gpgga_fields();
+    //print_gpgga_fields();
 
     // Print all $GPGSA fields that we are interested in
-    //print_gpgsa_fields();
+    print_gpgsa_fields();
 
     // Print all $GPRMC fields that we are interested in
     //print_gprmc_fields();
@@ -50,7 +50,7 @@ int main(void) {
   return 0;
 }
 
-static void print_gpgga_fields(void) {
+/*static void print_gpgga_fields(void) {
   uwrite_print_buff("hours: ");
   uwrite_println_byte(&statevars.gps_hours);
   uwrite_print_buff("minutes: ");
@@ -69,12 +69,16 @@ static void print_gpgga_fields(void) {
   uwrite_println_long(&statevars.gps_msl_altitude_m);
 
   return;
-}
+}*/
 
-/*static void print_gpgsa_fields(void) {
+static void print_gpgsa_fields(void) {
+  uwrite_print_buff("pdop: ");
+  uwrite_println_long(&statevars.gps_pdop);
+  uwrite_print_buff("vdop: ");
+  uwrite_println_long(&statevars.gps_vdop);
 
   return;
-}*/
+}
 
 /*static void print_gprmc_fields(void) {
 
