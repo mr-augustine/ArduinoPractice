@@ -48,7 +48,7 @@ reset:
 		stty -F $(ARD_PORT) -hupcl
 
 upload: obj/main.hex reset
-	avrdude -q -V -D -p $(MCU) \
+	avrdude -q -D -p $(MCU) \
 			-C /etc/avrdude.conf \
 			-c wiring \
 			-b 115200 \
