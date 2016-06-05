@@ -5,7 +5,8 @@
 #define _STATEVARS_H_
 
 #define GPS_SENTENCE_LENGTH   84
-#define GPS_DATE_WIDTH         8
+#define GPS_DATE_WIDTH        8
+#define PADDING_LENGTH        (512-411)
 
 #define STATUS_GPS_NO_BUFF_AVAIL  (1 << 2);
 #define STATUS_GPS_BUFF_OVERFLOW  (1 << 3);
@@ -42,6 +43,7 @@ typedef struct {
     float    gps_seconds;
     char     gps_date[GPS_DATE_WIDTH];
     uint8_t  gps_satcount;
+    char     padding[PADDING_LENGTH];
     uint32_t suffix;
 } statevars_t;
 

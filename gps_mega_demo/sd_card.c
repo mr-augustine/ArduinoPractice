@@ -638,12 +638,12 @@ void sdcard_write_data(void) {
     spi_exchange_byte(((uint8_t *)&statevars)[byte_index]);
   }
 
-  // Fill the remaining blocks with 0xAA
+  // Fill the remaining bytes of the block with 0xAA
   // This should never occur since the statevars_t is padded to 
   // fill a block
-  for (; byte_index < SDCARD_BYTES_PER_BLOCK; byte_index++) {
+  /*for (; byte_index < SDCARD_BYTES_PER_BLOCK; byte_index++) {
     spi_exchange_byte(PADDING_BYTE);
-  }
+  }*/
 
   // Ignore the 16-bit CRC
   spi_exchange_byte(JUNK_BYTE);

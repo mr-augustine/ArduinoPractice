@@ -145,8 +145,7 @@ void gps_update(void) {
     gps_unexpected_start = 0;
   }
 
-  if (gps_buffers[0].ready == 1) {
-    memcpy(statevars.gps_sentence0, gps_buffers[0].sentence, GPS_SENTENCE_BUFF_SZ); 
+  /*if (gps_buffers[0].ready == 1) {
     parse_gps_sentence(gps_buffers[0].sentence);
 
     memset(gps_buffers[0].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
@@ -154,7 +153,6 @@ void gps_update(void) {
   }
 
   if (gps_buffers[1].ready == 1) {
-    memcpy(statevars.gps_sentence1, gps_buffers[1].sentence, GPS_SENTENCE_BUFF_SZ); 
     parse_gps_sentence(gps_buffers[1].sentence);
 
     memset(gps_buffers[1].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
@@ -162,7 +160,6 @@ void gps_update(void) {
   }
 
   if (gps_buffers[2].ready == 1) {
-    memcpy(statevars.gps_sentence2, gps_buffers[2].sentence, GPS_SENTENCE_BUFF_SZ); 
     parse_gps_sentence(gps_buffers[2].sentence);
 
     memset(gps_buffers[2].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
@@ -170,11 +167,24 @@ void gps_update(void) {
   }
 
   if (gps_buffers[3].ready == 1) {
-    memcpy(statevars.gps_sentence3, gps_buffers[3].sentence, GPS_SENTENCE_BUFF_SZ); 
     parse_gps_sentence(gps_buffers[3].sentence);
 
     memset(gps_buffers[3].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
     gps_buffers[3].ready = 0;
+  }*/
+
+  uint8_t i = 0;
+  for (i = 0; i < NUM_GPS_SENTENCE_BUFFS; i++) {
+    if (gps_buffers[i].ready == 1) {
+      char * sentence_ptr = gps_buffers[i].sentence;
+
+      //parse_gps_sentence(gps_buffers[i].sentence);
+      parse_gps_sentence(sentence_ptr);
+
+      //memset(gps_buffers[i].sentence, '\0', GPS_SENTENCE_BUFF_SZ);
+      memset(sentence_ptr, '\0', GPS_SENTENCE_BUFF_SZ);
+      gps_buffers[i].ready = 0;
+    }
   }
 
   return;
@@ -313,9 +323,6 @@ static uint8_t parse_gpgga(char * s) {
 
 // pdop, vdop
 static uint8_t parse_gpgsa(char * s) {
-  char field_buf[GPS_FIELD_BUFF_SZ];
-  memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
-
   // $GPGSA header - ignore
   s = strtok(s, ",");
 
@@ -360,9 +367,6 @@ static uint8_t parse_gpgsa(char * s) {
 
 // speed over ground, course over ground, date, magnetic variation
 static uint8_t parse_gprmc(char * s) {
-  char field_buf[GPS_FIELD_BUFF_SZ];
-  memset(field_buf, '\0', GPS_FIELD_BUFF_SZ);
-
   // $GPRMC header - ignore
   s = strtok(s, ",");
 
@@ -529,6 +533,7 @@ static void parse_gps_sentence(char * sentence) {
     }
   } else {
     // We don't care about the GPGSV sentences
+
     // ---- DEBUG
     //uwrite_print_buff("GPGSV ignored\r\n");
   } 
