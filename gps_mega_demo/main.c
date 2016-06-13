@@ -69,7 +69,7 @@ int main(void) {
   sei();
 
   TIMSK1 = 0b00000001;
-
+return 0;
   while (1) {
 
     TCNT1 = 0;
@@ -95,7 +95,7 @@ int main(void) {
 
     iterations++;
 
-    if (iterations > 256) {
+    if (iterations > 512) {
       uwrite_print_buff("Finished collecting data!\r\n");
       break;
     }
