@@ -231,13 +231,13 @@ static int8_t sdcard_check_block(uint32_t block_address) {
   for (poll_index = 0; poll_index < 0xFF; poll_index++) {
     response = spi_exchange_byte(JUNK_BYTE); 
 
-    if (response == START_TOKEN) { 
-      uwrite_print_buff("DATA START_TOKEN received\r\n");
+    if (response == START_BLOCK_TOKEN) { 
+      uwrite_print_buff("DATA START_BLOCK_TOKEN received\r\n");
       break;
     }
   }
-  if (response != START_TOKEN) {
-    uwrite_print_buff("DATA START_TOKEN timed out\r\n");
+  if (response != START_BLOCK_TOKEN) {
+    uwrite_print_buff("DATA START_BLOCK_TOKEN timed out\r\n");
     return -1;
   }
 
@@ -464,12 +464,12 @@ uint8_t sdcard_read_block(uint32_t block_address, void * block_buff) {
   for (poll_index = 0; poll_index < 0xFF; poll_index++) {
     response = spi_exchange_byte(JUNK_BYTE); 
 
-    if (response == START_TOKEN) { 
-      uwrite_print_buff("DATA START_TOKEN received\r\n");
+    if (response == START_BLOCK_TOKEN) { 
+      uwrite_print_buff("DATA START_BLOCK_TOKEN received\r\n");
       break;
     }
   }
-  if (response != START_TOKEN) {
+  if (response != START_BLOCK_TOKEN) {
     return 0;
   }
 
@@ -535,12 +535,12 @@ static uint8_t sdcard_read_card_size(void) {
   for (poll_index = 0; poll_index < 0xFF; poll_index++) {
     response = spi_exchange_byte(JUNK_BYTE); 
 
-    if (response == START_TOKEN) { 
-      uwrite_print_buff("CSD START_TOKEN received\r\n");
+    if (response == START_BLOCK_TOKEN) { 
+      uwrite_print_buff("CSD START_BLOCK_TOKEN received\r\n");
       break;
     }
   }
-  if (response != START_TOKEN) {
+  if (response != START_BLOCK_TOKEN) {
     return 0;
   }
 
@@ -627,7 +627,7 @@ void sdcard_write_data(void) {
   }
 
   SDCARD_next_block = SDCARD_next_block + 1;
-  spi_exchange_byte(0xFE);
+  spi_exchange_byte(START_BLOCK_TOKEN);
 
   //----- DEBUG
   uwrite_print_buff("Writing data... \r\n");
@@ -649,14 +649,44 @@ void sdcard_write_data(void) {
   spi_exchange_byte(JUNK_BYTE);
   spi_exchange_byte(JUNK_BYTE);
 
-  if (spi_exchange_byte(JUNK_BYTE) != 0xE5) {
+  /*if (spi_exchange_byte(JUNK_BYTE) != 0xE5) {
     uwrite_print_buff("***SD Card disabled: 0xE5, write failed\r\n");
     SDCARD_enabled = 0;
     return;
-  }  
+  }*/
 
+  uint8_t data_write_response;
+  while ((data_write_response = spi_exchange_byte(JUNK_BYTE))) {
+    uint8_t lsnibble = data_write_response & 0x0F;
+
+    if (lsnibble == SDRES_DATA_ACCEPTED) {
+      uwrite_print_buff("Data accepted!\r\n");
+      break;
+    } else if (lsnibble == SDRES_BUSY) {
+      uwrite_print_buff("Card is busy...\r\n");
+      uwrite_println_byte(&data_write_response);
+    } else if (lsnibble == SDRES_DATA_REJECT_CRC) {
+      uwrite_print_buff("Data rejected: CRC error -> SD card disabled\r\n");
+      uwrite_println_byte(&data_write_response);
+      uwrite_println_byte(&lsnibble);
+      SDCARD_enabled = 0;
+      break;
+    } else if (lsnibble == SRES_DATA_REJECT_WRITE) {
+      uwrite_print_buff("Data rejected: write error -> SD card disabled\r\n");
+      uwrite_println_byte(&data_write_response);
+      uwrite_println_byte(&lsnibble);
+      SDCARD_enabled = 0;
+      break;
+    } else {
+      uwrite_print_buff("Unexpected response!\r\n"); 
+      uwrite_println_byte(&data_write_response);
+      uwrite_println_byte(&lsnibble);
+      //SDCARD_enabled = 0;
+      //break;
+    }
+  }
   //----- DEBUG
-  uwrite_print_buff("Done!\r\n");
+  //uwrite_print_buff("Done!\r\n");
   //----- DEBUG
 
   return;

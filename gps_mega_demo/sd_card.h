@@ -55,22 +55,24 @@
 #define SDSFX_WRITE_BLOCK         0x0
 
 #define SDCMD_SEND_STATUS         0xD //CMD13
-#define SDRES_DATA_ACCEPTED       0x2
-#define SDRES_DATA_REJECT_CRC     0x5
-#define SRES_DATA_REJECT_WRITE    0x6
+#define SDRES_DATA_ACCEPTED       0x5 //response nibble == 0101 (Sect 7.3.3.1)
+#define SDRES_DATA_REJECT_CRC     0xB //response nibble == 1011
+#define SRES_DATA_REJECT_WRITE    0xD //response nibble == 1101
+#define SDRES_BUSY                0x00
 ////////////////////////////////////////////////////////////////////////////////
 // Other Constants
 #define SDCARD_BYTES_PER_BLOCK    512
 #define SDCARD_CMD_MASK_HEAD      0b01000000 // used to shape card commands
 #define SDCARD_CMD_MASK_TAIL      0b00111111
 #define HIGH_BYTE                 0xFF // used to force MOSI high during init
-#define ERROR_BYTE                0xFF // used to indicate and error
+#define ERROR_BYTE                0xFF // used to indicate an error
 #define JUNK_BYTE                 0xFF // used to force data to be exchanged
 #define SDCARD_POLL_LIMIT         0xFF // max number of times to poll
 #define SDCARD_MAX_RETRIES        0xFF // max retries for send op condition
 #define MS_BIT                    0x80
 #define LS_BIT                    0x01
-#define START_TOKEN               0xFE
+#define START_BLOCK_TOKEN         0xFE // used at the start of a single block
+                                       // read or write
 #define PADDING_BYTE              0xAA // used to pad a block; just in case
 
 ////////////////////////////////////////////////////////////////////////////////
