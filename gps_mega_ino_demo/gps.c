@@ -6,7 +6,7 @@
 
 #include "gps.h"
 #include "statevars.h"
-#include "uwrite.h"
+//#include "uwrite.h"
 
 typedef struct {
   uint8_t ready;
